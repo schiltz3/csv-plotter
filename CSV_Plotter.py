@@ -1,29 +1,122 @@
-#!/usr/bin/env python
+"""CSV Plotter"""
 # coding: utf-8
 
 # In[4]:
 
 
+from dataclasses import dataclass
+import types
 import threading
-from collections import namedtuple
 import csv
 from functools import partial
 import tkinter as tk
+from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
 #start new tk dialog window and hide it
-root = tk.Tk()
-root.withdraw()
+LARGE_FONT= ("Verdana", 12)
 
-# show an "Open" dialog box and return the path to the selected file
-filename = askopenfilename(filetypes=[("CSV","*.csv")])
 
-print(filename)
 
 
 # In[11]:
+
+class CsvPlotter(tk.Tk):
+    """CSV Plotter"""
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        tk.Tk.wm_title(self, "CSV Plotter")
+
+        container = tk.Frame(self)
+        container.pack(side="top",
+                       fill="both",
+                       expand=True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        self.frames = {}
+
+        for F in (StartPage, GraphPage, SelectColumns):
+            frame = F(container, self)
+            self.frames[F] = frame
+            frame.grid(row=0,
+                       column=0,
+                       sticky="nsew")
+        self.show_frame(SelectColumns)
+        #self.show_frame(StartPage)
+
+    def show_frame(self, cont):
+        """Show Frame"""
+        frame = self.frames[cont]
+        frame.tkraise()
+
+class StartPage(tk.Frame):
+    """Start Page"""
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self,parent)
+        label = tk.Label(self, text="Start Page", font=LARGE_FONT)
+        label.pack(pady=10,padx=10)
+        button = ttk.Button(self, text="Visit Graph Page",
+                            command=lambda: controller.show_frame(GraphPage))
+        button.pack()
+
+class SelectColumns(tk.Frame):
+    """Select colum from csv"""
+    filename: str
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Select Columns", font=LARGE_FONT)
+        label.pack(pady=10,padx=10)
+        # show an "Open" dialog box and return the path to the selected file
+        root = tk.Tk()
+        root.withdraw()
+        self.filename = askopenfilename(filetypes=[("CSV","*.csv")])
+        print(type(filename))
+
+        print(filename)
+        controller.show_frame(StartPage)
+
+
+class GraphPage(tk.Frame):
+    """Page Three"""
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self,
+                         text="Graph Page",
+                         font=LARGE_FONT)
+        label.pack(pady=10, padx=10)
+
+        button1 = ttk.Button(self,text="Back to Home",
+                             command=lambda:controller.show_frame(StartPage))
+        button1.pack()
+
+        f = plt.figure(figsize=(5,5), dpi=100)
+        a = f.add_subplot(111)
+
+        a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
+
+
+        canvas = FigureCanvasTkAgg(f, self)
+        #canvas.show()
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.BOTTOM,
+                                  fill=tk.BOTH,
+                                  expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, self)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=tk.TOP,
+                              fill=tk.BOTH,
+                              expand=True)
+app = CsvPlotter()
+app.mainloop()
 
 
 # Structure varialbes
@@ -95,7 +188,7 @@ def get_column_titles(titles, chbx):
         column_titles.append(titles[col])
     return column_titles, columns # names and indexes of titles
 
-
+filename = SelectColumns.filename
 # Get the title row from doc
 title_row = get_title_row(filename, TITLE_ROW_NUM)
 
@@ -176,10 +269,16 @@ def fourier(signal):
     return freq, fourier_data, "frequency", "fourier"
 
 # Named tuple to store name and function reference3 in
-trans = namedtuple('Transformation','name transformation')
 
-transformations = []
-transformations.append(trans("Fourier",fourier))
+@dataclass
+class Transformation:
+    """Class for storing transformation name and function pointer"""
+    name: str
+    function: types.FunctionType
+
+
+
+#transformations.append(trans("Fourier",fourier))
 
 #pylint: disable=too-many-arguments
 def update_graph(lines, figure, data_array, _use_cols_titles, x_data=None, xlab=None, ylab=None):
