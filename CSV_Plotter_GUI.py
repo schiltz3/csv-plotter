@@ -12,7 +12,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 from dataclasses import dataclass
 import types
-import threading
 import csv
 from functools import partial
 import tkinter as tk
@@ -30,8 +29,10 @@ LARGE_FONT= ("Verdana", 12)
 class CsvPlotter(tk.Tk):
     """CSV Plotter"""
     filename = ""
+    use_cols_titles = []
+    data_array = None
     def __init__(self, *args, **kwargs):
-        self.filename = ""
+
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.wm_title(self, "CSV Plotter")
 
@@ -74,22 +75,22 @@ class StartPage(tk.Frame):
 class SelectColumns(tk.Frame):
     """Select colum from csv"""
     def __init__(self, parent, controller):
-        self.widget_list = []
-        self.chbx = []
-        self.check_box = []
-        self.stale = False
-        self.title_row = []
-        self.use_cols = []
-        self.use_cols_titles = []
-        self.title_row_num = 3
-        self.spam = False
-
 
         tk.Frame.__init__(self, parent)
         self.title_label = ttk.Label(self, text="Main Page", font=LARGE_FONT)
         self.title_label.pack(pady=10,padx=10)
         self.parent = parent
         self.controller = controller
+
+        self.widget_list = []
+        self.chech_box = []
+        self.check_box_int = []
+        self.title_row = []
+        self.use_cols = []
+        self.title_row_num = 3
+        self.spam = False
+        self.parent.use_cols_titles = []
+        self.parent.data_array = None
 
         # Open file and get filename
         def select_file():
@@ -125,15 +126,15 @@ class SelectColumns(tk.Frame):
 
     def var_states(self):
         """Prints the state of the checkbox variables"""
-        print("chbx")
-        for check in self.chbx:
+        print("check_box")
+        for check in self.chech_box:
             print(check.get())
 
     def convert_boxes(self):
-        """Converts chbx to check_box"""
-        self.check_box = []
-        for box in self.chbx:
-            self.check_box.append(box.get())
+        """Converts checkbox to check_box_int"""
+        self.check_box_int = []
+        for box in self.chech_box:
+            self.check_box_int.append(box.get())
         #print(f"check_box: {self.check_box}")
 
     def confirm_check(self):
@@ -141,7 +142,7 @@ class SelectColumns(tk.Frame):
         #self.var_states()
         self.convert_boxes()
         #print(f"check_box in confirm: {self.check_box}")
-        for box in self.check_box:
+        for box in self.check_box_int:
             if box == 1:
                 return True
         return False
@@ -150,7 +151,6 @@ class SelectColumns(tk.Frame):
     def graph(self):
         """The command to move out of the user input loop"""
         if self.confirm_check() is True:
-            self.stale = True
             self.main()
         else:
             if self.spam is False:
@@ -170,7 +170,7 @@ class SelectColumns(tk.Frame):
 
     def create_checkboxes(self):
         """start new top level checkbox window and return list of checked boxes"""
-        self.chbx = []
+        self.chech_box = []
         self.title_label['text'] = os.path.basename(self.parent.filename)
         for  _title in self.title_row:
             check = tk.IntVar()
@@ -180,7 +180,7 @@ class SelectColumns(tk.Frame):
                            )
             button.pack()
             self.widget_list.append(button)
-            self.chbx.append(check)
+            self.chech_box.append(check)
 
         button = ttk.Button(self,
                            text="Graph",
@@ -188,28 +188,26 @@ class SelectColumns(tk.Frame):
         button.pack()
         self.widget_list.append(button)
 
-        button = ttk.Button(self,
-                           text="Show",
-                           command=self.var_states)
-        button.pack()
-        self.widget_list.append(button)
+#        button = ttk.Button(self,text="Show",command=self.var_states)
+#        button.pack()
+#        self.widget_list.append(button)
 
     def get_column_titles(self):
         """Returns Names and Indexes of tiles"""
         self.use_cols = []
         self.convert_boxes()
         # num is the column index
-        for num, check in enumerate(self.check_box):
+        for num, check in enumerate(self.check_box_int):
             if check == 1:
                 self.use_cols.append(num)
-                self.use_cols_titles.append(self.title_row[num])
+                self.parent.use_cols_titles.append(self.title_row[num])
 #        col = None
 #        for col in self.use_cols:
 #            self.use_cols_titles.append(self.title_row[col])
 
     def main_init(self):
         """Only used when opening new Files"""
-        self.use_cols_titles = []
+        self.parent.use_cols_titles = []
 
         # Get the title row from doc
         self.get_title_row()
@@ -224,7 +222,7 @@ class SelectColumns(tk.Frame):
         self.get_column_titles()
 
         # Open file and create 2D array from data
-        data_array = np.genfromtxt(self.parent.filename,
+        self.parent.data_array = np.genfromtxt(self.parent.filename,
                                   dtype=int,
                                   delimiter=",",
                                   skip_header=self.title_row_num,
@@ -232,15 +230,18 @@ class SelectColumns(tk.Frame):
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
-        print(data_array)
+        print(self.parent.data_array)
         self.controller.show_frame(GraphPage)
 
 
 class GraphPage(tk.Frame):
     """Page Three"""
-
+    #data_array = None
+    #use_cols_titles = []
+    #parent = None
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
         label = tk.Label(self,
                          text="Graph Page",
                          font=LARGE_FONT)
@@ -250,6 +251,9 @@ class GraphPage(tk.Frame):
                              command=lambda:controller.show_frame(SelectColumns))
         button1.pack()
 
+        #self.update_graph_menue()
+
+
         f = plt.figure(figsize=(5,5), dpi=100)
         a = f.add_subplot(111)
 
@@ -257,7 +261,6 @@ class GraphPage(tk.Frame):
 
 
         canvas = FigureCanvasTkAgg(f, self)
-        #canvas.show()
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM,
                                   fill=tk.BOTH,
@@ -268,6 +271,39 @@ class GraphPage(tk.Frame):
         canvas._tkcanvas.pack(side=tk.TOP,
                               fill=tk.BOTH,
                               expand=True)
+
+# dynamically make menue of lines to switch bottem graph to
+    def update_graph_menue(self):
+        """Updates the Graph Menue"""
+
+        #pylint: disable=invalid-name
+        _column = 0
+        #self = tk.Toplevel()
+        for _column, title in enumerate(self.use_cols_titles):
+            button = tk.Button(self,
+                      text=title,
+                      command=partial(update_graph,
+                      ln2,
+                      fig,
+                      get_array(self.data_array,_column),
+                      title)
+                      )
+            button.pack(side=tk.LEFT,pady=4)
+
+        button = tk.Button(self,
+                  text="quit",
+                  command=self.quit
+                  )
+        button.pack()
+
+        tk.mainloop()
+
+        self.destroy()
+        #pylint: enable-msg=invalid-name
+
+
+
+
 app = CsvPlotter()
 app.mainloop()
 
@@ -369,37 +405,3 @@ def update_graph(lines, figure, data_array, _use_cols_titles, x_data=None, xlab=
     graph_menu.lift()
 #pylint: enable-msg=too-many-arguments
 
-def lift_window():
-    """lifts the window"""
-    print("lift")
-    graph_menu.lift()
-# dynamically make menue of lines to switch bottem graph to
-
-#pylint: disable=invalid-name
-_column = 0
-graph_menu = tk.Toplevel()
-threading.Timer(1,lift_window).start()
-for _column, title in enumerate(use_cols_titles):
-    tk.Button(graph_menu,
-              text=title,
-              command=partial(update_graph,
-              ln2,
-              fig,
-              get_array(dataArray,_column),
-              title)
-              ).grid(row=_column,
-                    sticky=tk.W,
-                    pady=4)
-
-tk.Button(graph_menu,
-          text="quit",
-          command=graph_menu.quit
-          ).grid(row=_column+1,
-                 sticky=tk.W,
-                 pady=4)
-
-tk.mainloop()
-
-#timer.cancel()
-graph_menu.destroy()
-#pylint: enable-msg=invalid-name
