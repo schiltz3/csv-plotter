@@ -27,7 +27,7 @@ print(filename)
 
 # Structure varialbes
 use_cols_titles = ()
-TITLE_ROW_NUM = 3
+TITLE_ROW_NUM = 1
 
 
 # Open file and pull out column header data

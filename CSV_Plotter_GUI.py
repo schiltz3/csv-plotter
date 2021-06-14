@@ -87,7 +87,7 @@ class SelectColumns(tk.Frame):
         self.check_box_int = []
         self.title_row = []
         self.use_cols = []
-        self.title_row_num = 3
+        self.title_row_num = 1
         self.spam = False
         self.parent.use_cols_titles = []
         self.parent.data_array = None
