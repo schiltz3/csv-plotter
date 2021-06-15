@@ -94,7 +94,7 @@ class SelectColumns(tk.Frame):
 
         # Open file and get filename
         def select_file():
-            self.controller.filename = askopenfilename(filetypes=[("CSV","*.csv")])
+            self.controller.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
 
             if controller.filename != '':
                 print(controller.filename)
@@ -196,6 +196,7 @@ class SelectColumns(tk.Frame):
         """Returns Names and Indexes of tiles"""
         self.use_cols = []
         self.convert_boxes()
+        self.controller.use_cols_titles = []
         # num is the column index
         for num, check in enumerate(self.check_box_int):
             if check == 1:
@@ -233,6 +234,7 @@ class SelectColumns(tk.Frame):
                                   filling_values=0)
         #print(np.info(dataArray))
         print(self.controller.data_array)
+        #self.controller.frames.GraphPage.main()
         self.controller.show_frame(GraphPage)
 
 
@@ -275,6 +277,8 @@ class GraphPage(tk.Frame):
                 self.get_array(self.controller.data_array, -1),
                 self.controller.use_cols_titles[-1])
         self.update_graph_menu()
+
+        self.controller.eval('tk::PlaceWindow . center')
 
 
     def plotcsv(self, plot_data, legends, data_array, legends_2):
@@ -373,6 +377,9 @@ class GraphPage(tk.Frame):
 
 
 app = CsvPlotter()
+
+# Places window in center
+app.eval('tk::PlaceWindow . center')
 
 app.protocol("WM_DELETE_WINDOW",app.quit)
 app.mainloop()
