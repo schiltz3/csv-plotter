@@ -1,7 +1,6 @@
 """CSV Plotter"""
 # coding: utf-8
 
-# In[4]:
 
 
 import os
@@ -24,12 +23,11 @@ LARGE_FONT= ("Verdana", 12)
 
 
 
-# In[11]:
-
 class CsvPlotter(tk.Tk):
     """CSV Plotter"""
     use_cols_titles = []
     data_array = None
+    ## Constructor
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
@@ -45,33 +43,27 @@ class CsvPlotter(tk.Tk):
         self.filename = ""
         self.frames = {}
 
-        for F in (StartPage, GraphPage, SelectColumns):
+        for F in (GraphPage, SelectColumns):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0,
                        column=0,
                        sticky="nsew")
 
-        #self.show_frame(StartPage)
         self.show_frame(SelectColumns)
 
+    ##
+    # Brings the selected Frame to front
+    # @param    self    the object pointer
+    # @param    cont    pointer to frame to raise
     def show_frame(self, cont):
-        """Show Frame"""
+        """Brings the selected Frame to front"""
         frame = self.frames[cont]
         frame.tkraise()
 
-class StartPage(tk.Frame):
-    """Start Page"""
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self,parent)
-        label = ttk.Label(self, text="Home", font=LARGE_FONT)
-        label.pack(pady=10,padx=10)
-
-        button = ttk.Button(self,
-                            text="Select Columns",
-                            command=lambda: controller.show_frame(SelectColumns))
-        button.pack()
-
+##
+# Tk Frame that contans used to display the data selection screen
+# @extends  tk.Frame
 class SelectColumns(tk.Frame):
     """Select colum from csv"""
     def __init__(self, parent, controller):
@@ -92,7 +84,10 @@ class SelectColumns(tk.Frame):
         self.controller.use_cols_titles = []
         self.controller.data_array = None
 
-        # Open file and get filename
+        ## Open file and get filename
+        # Global Variables Affected
+        # \link self.controller.filename \endlink
+        # @param    widget_list
         def select_file():
             self.controller.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
 
@@ -114,7 +109,12 @@ class SelectColumns(tk.Frame):
         button.pack()
 
 
-    # Open file and pull out column header data
+    ## Open file and pull out column header data
+    # @param    self    the object pointer
+    # Global Variables Affected
+    # @param    filename
+    # @param    title_row_num
+    # @param    title_row
     def get_title_row(self):
         """Returns title row"""
         with open(self.controller.filename, newline='') as csvfile:
@@ -202,9 +202,6 @@ class SelectColumns(tk.Frame):
             if check == 1:
                 self.use_cols.append(num)
                 self.controller.use_cols_titles.append(self.title_row[num])
-#        col = None
-#        for col in self.use_cols:
-#            self.use_cols_titles.append(self.title_row[col])
 
     def main_init(self):
         """Only used when opening new Files"""
@@ -234,15 +231,11 @@ class SelectColumns(tk.Frame):
                                   filling_values=0)
         #print(np.info(dataArray))
         print(self.controller.data_array)
-        #self.controller.frames.GraphPage.main()
         self.controller.show_frame(GraphPage)
 
 
 class GraphPage(tk.Frame):
     """Page Three"""
-    #data_array = None
-    #use_cols_titles = []
-    #parent = None
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
@@ -262,7 +255,6 @@ class GraphPage(tk.Frame):
         self.parent = parent
         self.widget_list = []
 
-        #self.update_graph_menue()
 
     def main(self):
         print ("Graph Main:")
@@ -284,7 +276,6 @@ class GraphPage(tk.Frame):
     def plotcsv(self, plot_data, legends, data_array, legends_2):
         """Create Two plots, and fills the top with selected data"""
         #top (general) plot
-        #plt.ion()
         figure = plt.figure(figsize=(16,6))
         axes_1 = figure.add_subplot(211)
         axes_1.plot(plot_data)
@@ -302,7 +293,6 @@ class GraphPage(tk.Frame):
         plt.ylabel('Magnetic field [LSB]',backgroundcolor='white')
 
         axes_2.legend((line_2[0],),(legends_2,),loc=1,bbox_to_anchor=(1.085,1))
-        #plt.pause(0.1)
 
 
         canvas = FigureCanvasTkAgg(figure, self)
@@ -333,7 +323,6 @@ class GraphPage(tk.Frame):
 
         #pylint: disable=invalid-name
         _column = 0
-        #self = tk.Toplevel()
         for _column, title in enumerate(self.controller.use_cols_titles):
             button = ttk.Button(self,
                       text=title,
