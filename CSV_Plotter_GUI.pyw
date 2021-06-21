@@ -68,9 +68,6 @@ class PlotterData:
     ## Row the title starts on in CSV
     title_row_num:  int = field(default=1)
 
-    ## Prevents user from spamming button
-    spam:           bool = field(default=False)    # Probrobly should stay in SelectColumns
-
     ## List of 2nd array's Line
     line:           list = field(default_factory=list)
 
@@ -412,10 +409,6 @@ class GraphPage(tk.Frame):
         # @var widget_list
         self.widget_list = []
 
-        ## Handle to 2nd array's Line
-        # @var ln2
-        self.ln2 = None
-
     def main(self):
         """!
         Called when Update Graph is clicked
@@ -424,7 +417,7 @@ class GraphPage(tk.Frame):
         @link   widget_list                                 @endlink\n
         @link   CsvPlotter.data_array       data_array      @endlink\n
         @link   CsvPlotter.use_cols_titles  use_cols_titles @endlink\n
-        @link   ln2                                         @endlink\n
+        @link   PlotterData.line            line            @endlink\n
         @link   fig                                         @endlink
 
         @par    Methods called
@@ -438,7 +431,7 @@ class GraphPage(tk.Frame):
         for widget in self.widget_list:
             widget.destroy()
 
-        self.ln2, self.context.fig = self.plotcsv(self.context.file_data,
+        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
                 self.context.use_cols_titles,
                 self.get_array(self.context.file_data, -1),
                 self.context.use_cols_titles[-1])
@@ -516,10 +509,10 @@ class GraphPage(tk.Frame):
         Updates the Graph Menu
         @param  self    The object pointer
         @par    Global variables affected
-        @link   use_cols_titles     @endlink\n
-        @link   ln2                 @endlink\n
-        @link   fig                 @endlink\n
-        @link   widget_list         @endlink
+        @link   use_cols_titles             @endlink\n
+        @link   PlotterData.line    line    @endlink\n
+        @link   fig                         @endlink\n
+        @link   widget_list                 @endlink
         """
 
         #pylint: disable=invalid-name
@@ -528,7 +521,7 @@ class GraphPage(tk.Frame):
             button = ttk.Button(self,
                       text=title,
                       command=partial(self.update_graph,
-                      self.ln2,
+                      self.context.line,
                       self.context.fig,
                       self.get_array(self.context.file_data,_column),
                       title)
