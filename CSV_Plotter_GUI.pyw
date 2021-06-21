@@ -51,7 +51,7 @@ class PlotterData:
     filename:       str = field(default="")
 
     ## Stores the frames that make up the app pages
-    frames:         list = field(default_factory=list)
+    #frames:         dict = field(default_factory=dict)
 
     ## List of check boxes in column menu
     check_box:      List[ttk.Checkbutton]= field(default_factory=list)
@@ -128,10 +128,6 @@ class SelectColumns(tk.Frame):
 
         tk.Frame.__init__(self, parent)
 
-        ## Page Title widget handle
-        # @var title_label
-        self.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
-        self.title_label.pack(pady=10,padx=10)
 
         ## Object pointer to parent frame
         # @var parent
@@ -145,21 +141,18 @@ class SelectColumns(tk.Frame):
         # @var context
         self.context = context
 
+        ## Page Title widget handle
+        # @var title_label
+        context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
+        context.title_label.pack(pady=10,padx=10)
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
 
-        ## List of column titles
-        # @var title_row
-        self.title_row = []
-
         ## List of column indexes to import
         # @var use_cols
         self.use_cols = []
-
-        ## Row the title starts on in CSV
-        # @var title_row_num
-        self.title_row_num = 1
 
         ## Prevents user from spamming button
         # @var spam
@@ -207,8 +200,8 @@ class SelectColumns(tk.Frame):
         with open(self.context.filename, newline='') as csvfile:
             filedata = csv.reader(csvfile, delimiter=',')
             for row in filedata:
-                if filedata.line_num == self.title_row_num :
-                    self.title_row = row
+                if filedata.line_num == self.context.title_row_num :
+                    self.context.title_row = row
 
 
     def var_states(self):
@@ -292,8 +285,8 @@ class SelectColumns(tk.Frame):
         @link   widget_list @endlink
         """
         self.context.check_box = []
-        self.title_label['text'] = os.path.basename(self.context.filename)
-        for  _title in self.title_row:
+        self.context.title_label['text'] = os.path.basename(self.context.filename)
+        for  _title in self.context.title_row:
             check = tk.IntVar()
             button = ttk.Checkbutton(self,
                            text=_title,
@@ -331,7 +324,7 @@ class SelectColumns(tk.Frame):
         for num, check in enumerate(self.context.check_box_int):
             if check == 1:
                 self.use_cols.append(num)
-                self.context.use_cols_titles.append(self.title_row[num])
+                self.context.use_cols_titles.append(self.context.title_row[num])
 
     def main_init(self):
         """!
@@ -349,7 +342,7 @@ class SelectColumns(tk.Frame):
 
         # Get the title row from doc
         self.get_title_row()
-        print(self.title_row)
+        print(self.context.title_row)
         # Create Check box menu from title row
         self.create_checkboxes()
         print("Created menu")
@@ -372,15 +365,15 @@ class SelectColumns(tk.Frame):
 
 
         # Open file and create 2D array from data
-        self.context.data_array = np.genfromtxt(self.context.filename,
+        self.context.file_data = np.genfromtxt(self.context.filename,
                                   dtype=int,
                                   delimiter=",",
-                                  skip_header=self.title_row_num,
+                                  skip_header=self.context.title_row_num,
                                   usecols = self.use_cols,
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
-        print(self.context.data_array)
+        print(self.context.file_data)
         self.controller.show_frame(GraphPage)
 
 
@@ -424,11 +417,6 @@ class GraphPage(tk.Frame):
         # @var ln2
         self.ln2 = None
 
-        ## Handle to the 2nd array's Figure
-        # @var fig
-        self.fig = None
-
-
     def main(self):
         """!
         Called when Update Graph is clicked
@@ -445,15 +433,15 @@ class GraphPage(tk.Frame):
         @link   update_graph_menu                           @endlink
         """
         print ("Graph Main:")
-        print (f"data_array:\n{self.context.data_array}")
+        print (f"file_data:\n{self.context.file_data}")
         print (f"use_cols_titles: {self.context.use_cols_titles}")
 
         for widget in self.widget_list:
             widget.destroy()
 
-        self.ln2, self.fig = self.plotcsv(self.context.data_array,
+        self.ln2, self.context.fig = self.plotcsv(self.context.file_data,
                 self.context.use_cols_titles,
-                self.get_array(self.context.data_array, -1),
+                self.get_array(self.context.file_data, -1),
                 self.context.use_cols_titles[-1])
         self.update_graph_menu()
 
@@ -542,8 +530,8 @@ class GraphPage(tk.Frame):
                       text=title,
                       command=partial(self.update_graph,
                       self.ln2,
-                      self.fig,
-                      self.get_array(self.context.data_array,_column),
+                      self.context.fig,
+                      self.get_array(self.context.file_data,_column),
                       title)
                       )
             button.pack(side=tk.LEFT,pady=4)
