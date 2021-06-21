@@ -317,13 +317,12 @@ class SelectColumns(tk.Frame):
         @link   check_box_int                                   @endlink\n
         @link   title_row                                       @endlink\n
         """
-        self.use_cols = []
         self.convert_boxes()
         self.context.use_cols_titles = []
         # num is the column index
         for num, check in enumerate(self.context.check_box_int):
             if check == 1:
-                self.use_cols.append(num)
+                self.context.use_cols.append(num)
                 self.context.use_cols_titles.append(self.context.title_row[num])
 
     def main_init(self):
@@ -369,7 +368,7 @@ class SelectColumns(tk.Frame):
                                   dtype=int,
                                   delimiter=",",
                                   skip_header=self.context.title_row_num,
-                                  usecols = self.use_cols,
+                                  usecols = self.context.use_cols,
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
