@@ -53,9 +53,6 @@ class PlotterData:
     ## Stores the frames that make up the app pages
     frames:         list = field(default_factory=list)
 
-    ## List of widgets in frame
-    widget_list:    list = field(default_factory=list)
-
     ## List of check boxes in column menu
     check_box:      List[ttk.Checkbutton]= field(default_factory=list)
 
@@ -98,18 +95,6 @@ class CsvPlotter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         context = PlotterData()
-
-        ## Stores filename of CSV
-        # @var string filename
-        self.filename = ""
-
-        ## Titles of the selected column in @link SelectColumns.use_cols use_cols@endlink
-        # @var use_cols_titles
-        self.use_cols_titles = []
-
-        ## 2d array of data pulled from CSV
-        # @var data_array
-        self.data_array = None
 
         ## Stores the frames that make up the app pages
         # @var frames
@@ -194,13 +179,14 @@ class SelectColumns(tk.Frame):
             @par    Methods Called
             @link   main_init                                   @endlink
             @par    Global Variables Affected
-            @link   self.controller.filename    widget_list     @endlink \n
+            @link   self.context.filename       filename        @endlink \n
             @link   SelectColumns.widget_list   widget_list     @endlink
             """
-            self.controller.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+            self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+            print(f"Context filename: {self.context.filename}")
 
-            if controller.filename != '':
-                print(controller.filename)
+            if self.context.filename != '':
+                print(self.context.filename)
                 if len(self.widget_list) > 0:
                     for bt in self.widget_list:
                         print(bt)
@@ -226,7 +212,7 @@ class SelectColumns(tk.Frame):
         @link     title_row_num       title_row_num   @endlink\n
         @link     title_row           title_row       @endlink\n
         """
-        with open(self.controller.filename, newline='') as csvfile:
+        with open(self.context.filename, newline='') as csvfile:
             filedata = csv.reader(csvfile, delimiter=',')
             for row in filedata:
                 if filedata.line_num == self.title_row_num :
@@ -314,7 +300,7 @@ class SelectColumns(tk.Frame):
         @link   widget_list @endlink
         """
         self.check_box = []
-        self.title_label['text'] = os.path.basename(self.controller.filename)
+        self.title_label['text'] = os.path.basename(self.context.filename)
         for  _title in self.title_row:
             check = tk.IntVar()
             button = ttk.Checkbutton(self,
@@ -348,12 +334,12 @@ class SelectColumns(tk.Frame):
         """
         self.use_cols = []
         self.convert_boxes()
-        self.controller.use_cols_titles = []
+        self.context.use_cols_titles = []
         # num is the column index
         for num, check in enumerate(self.check_box_int):
             if check == 1:
                 self.use_cols.append(num)
-                self.controller.use_cols_titles.append(self.title_row[num])
+                self.context.use_cols_titles.append(self.title_row[num])
 
     def main_init(self):
         """!
@@ -367,7 +353,7 @@ class SelectColumns(tk.Frame):
         @par    Global Variables Affected
         @link   CsvPlotter.use_cols_titles    use_cols_titles     @endlink
         """
-        self.controller.use_cols_titles = []
+        self.context.use_cols_titles = []
 
         # Get the title row from doc
         self.get_title_row()
@@ -390,11 +376,11 @@ class SelectColumns(tk.Frame):
         """
         # Get columns and column Titles selected in the checkbox menu from doc
         self.get_column_titles()
-        print(f"Main use_cols_titles: {self.controller.use_cols_titles}")
+        print(f"Main use_cols_titles: {self.context.use_cols_titles}")
 
 
         # Open file and create 2D array from data
-        self.controller.data_array = np.genfromtxt(self.controller.filename,
+        self.context.data_array = np.genfromtxt(self.context.filename,
                                   dtype=int,
                                   delimiter=",",
                                   skip_header=self.title_row_num,
@@ -402,7 +388,7 @@ class SelectColumns(tk.Frame):
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
-        print(self.controller.data_array)
+        print(self.context.data_array)
         self.controller.show_frame(GraphPage)
 
 
@@ -467,16 +453,16 @@ class GraphPage(tk.Frame):
         @link   update_graph_menu                           @endlink
         """
         print ("Graph Main:")
-        print (f"data_array:\n{self.controller.data_array}")
-        print (f"use_cols_titles: {self.controller.use_cols_titles}")
+        print (f"data_array:\n{self.context.data_array}")
+        print (f"use_cols_titles: {self.context.use_cols_titles}")
 
         for widget in self.widget_list:
             widget.destroy()
 
-        self.ln2, self.fig = self.plotcsv(self.controller.data_array,
-                self.controller.use_cols_titles,
-                self.get_array(self.controller.data_array, -1),
-                self.controller.use_cols_titles[-1])
+        self.ln2, self.fig = self.plotcsv(self.context.data_array,
+                self.context.use_cols_titles,
+                self.get_array(self.context.data_array, -1),
+                self.context.use_cols_titles[-1])
         self.update_graph_menu()
 
         self.controller.eval('tk::PlaceWindow . center')
@@ -559,13 +545,13 @@ class GraphPage(tk.Frame):
 
         #pylint: disable=invalid-name
         _column = 0
-        for _column, title in enumerate(self.controller.use_cols_titles):
+        for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
                       text=title,
                       command=partial(self.update_graph,
                       self.ln2,
                       self.fig,
-                      self.get_array(self.controller.data_array,_column),
+                      self.get_array(self.context.data_array,_column),
                       title)
                       )
             button.pack(side=tk.LEFT,pady=4)
