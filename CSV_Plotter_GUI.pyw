@@ -26,6 +26,11 @@ matplotlib.use("TkAgg")
 
 LARGE_FONT= ("Verdana", 12)
 
+@dataclass
+class PlotterData:
+    """!
+    Class used to store and retrieve all data as well as modify it
+    """
 
 
 class CsvPlotter(tk.Tk):
