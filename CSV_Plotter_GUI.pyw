@@ -1,23 +1,28 @@
-"""CSV Plotter"""
+"""!
+Plots CSV files, preforms analysis on the data, and displays it in multiple graphs
+"""
 # coding: utf-8
 
 
 
 import os
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-
-from dataclasses import dataclass
-import types
 import csv
+import types
 from functools import partial
+
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 
+from dataclasses import dataclass
 import numpy as np
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+
 
 LARGE_FONT= ("Verdana", 12)
 
