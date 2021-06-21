@@ -50,14 +50,12 @@ class PlotterData:
     ## Stores filename of CSV
     filename:       str = field(default="")
 
-    ## Stores the frames that make up the app pages
-    #frames:         dict = field(default_factory=dict)
-
     ## List of check boxes in column menu
-    check_box:      List[ttk.Checkbutton]= field(default_factory=list)
+    check_box:      List[tk.IntVar]= field(default_factory=list)
 
     ## check_box represented as intigers
     check_box_int:  List[int] = field(default_factory=list)
+
 
     ## List of column titles
     title_row:      List[str] = field(default_factory=list)
