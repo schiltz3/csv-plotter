@@ -79,7 +79,7 @@ class CsvPlotter(tk.Tk):
 ##
 class SelectColumns(tk.Frame):
     """!
-    Tk Frame that contans used to display the data selection screen
+    Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
     def __init__(self, parent, controller):
@@ -346,7 +346,10 @@ class SelectColumns(tk.Frame):
 
 
 class GraphPage(tk.Frame):
-    """Page Three"""
+    """!
+    Tk Frame that handles graphing selected data
+    @extends  tk.Frame
+    """
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
@@ -362,12 +365,42 @@ class GraphPage(tk.Frame):
                             command=self.main)
         button.pack()
 
+        ## Object pointer to @link  CsvPlotter  controller  @endlink
+        # @var controller
         self.controller = controller
+
+        ## Object pointer to parent frame
+        # @var parent
         self.parent = parent
+
+        ## List of widgets in frame
+        # @var widget_list
         self.widget_list = []
+
+        ## Handle to 2nd array's Line
+        # @var ln2
+        self.ln2 = None
+
+        ## Handle to the 2nd array's Figure
+        # @var fig
+        self.fig = None
 
 
     def main(self):
+        """!
+        Called when Update Graph is clicked
+        @param  self    The object pointer
+        @par    Global Variables Affected
+        @link   widget_list                                 @endlink\n
+        @link   CsvPlotter.data_array       data_array      @endlink\n
+        @link   CsvPlotter.use_cols_titles  use_cols_titles @endlink\n
+        @link   ln2                                         @endlink\n
+        @link   fig                                         @endlink
+
+        @par    Methods called
+        @link   get_array                                   @endlink\n
+        @link   update_graph_menu                           @endlink
+        """
         print ("Graph Main:")
         print (f"data_array:\n{self.controller.data_array}")
         print (f"use_cols_titles: {self.controller.use_cols_titles}")
@@ -385,7 +418,19 @@ class GraphPage(tk.Frame):
 
 
     def plotcsv(self, plot_data, legends, data_array, legends_2):
-        """Create Two plots, and fills the top with selected data"""
+        """!
+        Create Two plots, filling the top with selected data and the bottem
+        with a single focused graph
+        @param  self        The object pointer
+        @param  plot_data   ndArray of data to plot
+        @param  legend      Legends for the 2d Array
+        @param  data_array  Array of data for 2nd graph
+        @param  legends_2   Legend for the 2nd Array
+        @par    Global variables affected
+        @link   widget_list @endlink\n
+        @retval line_2      Handle for the 2nd graph's Line
+        @retval figure      Handle for the 2nd graph's figure
+        """
         #top (general) plot
         figure = plt.figure(figsize=(16,6))
         axes_1 = figure.add_subplot(211)
@@ -424,13 +469,27 @@ class GraphPage(tk.Frame):
         return line_2, figure
 
     def get_array(self, data_array, _col):
-        """Wrapper for selecting col from data_array to prevent IndexError"""
+        """!
+        Wrapper for selecting col from data_array to prevent IndexError
+        @param  self        The object pointer
+        @param  data_array  ndArray to slice
+        @param  _col        the index of the column to return
+        @return Returns either the 1d array denoted by @link _col @endlink
+        or the entire array if it is already a 1d array
+        """
         if len(data_array.shape) > 1:
             return data_array[:,_col]
         return data_array
     # dynamically make menu of lines to switch bottem graph to
     def update_graph_menu(self):
-        """Updates the Graph Menu"""
+        """Updates the Graph Menu
+        @param  self    The object pointer
+        @par    Global variables affected
+        @link   use_cols_titles     @endlink\n
+        @link   ln2                 @endlink\n
+        @link   fig                 @endlink\n
+        @link   widget_list         @endlink
+        """
 
         #pylint: disable=invalid-name
         _column = 0
@@ -448,8 +507,21 @@ class GraphPage(tk.Frame):
         #pylint: enable-msg=invalid-name
 
     #pylint: disable=too-many-arguments
-    def update_graph(self, lines, figure, data_array, _use_cols_titles, x_data=None, xlab=None, ylab=None):
-        """Update bottem graph with new array"""
+    def update_graph(self, lines, figure, data_array, _use_cols_titles, x_data=None, xlab=None, ylab=None, xrange=None, yrange=None):
+        """!Update bottem graph with new array
+        @param  self                The object pointer
+        @param  lines               Lines to edit
+        @param  figure              2nd graph's figure
+        @param  data_array          Data to change graph's Y values to
+        @param  _use_cols_titles    The legend to apply
+        @param  x_data              [optional]  Data to change graph's X values to
+        @param  xlab                [optional]  String to set X lable to
+        @param  ylab                [optional]  String to set Y lable to
+        @param  xrange              [optional]  Touple of lower and upper bounds
+        for x range (Currently not implemented)
+        @param  yrange              [optional]  Touple of lower and upper bounds
+        for y range (Currently not implemented)
+        """
         y_data = data_array
 
         #x_data, y_data, xlab, ylab = fourier(data_array)
@@ -496,7 +568,7 @@ def fourier(signal):
     freq = np.fft.fftfreq(number_of_elements, d=timestep)
     return freq, fourier_data, "frequency", "fourier"
 
-# Named tuple to store name and function reference3 in
+# Named tuple to store name and function reference in
 
 @dataclass
 class Transformation:
