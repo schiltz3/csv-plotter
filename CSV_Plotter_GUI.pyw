@@ -50,13 +50,6 @@ class PlotterData:
     ## Stores filename of CSV
     filename:       str = field(default="")
 
-    ## List of check boxes in column menu
-    check_box:      List[tk.IntVar]= field(default_factory=list)
-
-    ## check_box represented as intigers
-    check_box_int:  List[int] = field(default_factory=list)
-
-
     ## List of column titles
     title_row:      List[str] = field(default_factory=list)
 
@@ -68,6 +61,49 @@ class PlotterData:
 
     ## List of 2nd array's Line
     line:           list = field(default_factory=list)
+
+    ## List of check boxes in column menu
+    check_box:      List[tk.IntVar]= field(default_factory=list)
+
+    ## check_box represented as intigers
+    __check_box_int:  List[int] = field(default_factory=list)
+
+    def var_states(self):
+        """!
+        Prints the state of the checkbox variables
+        @param    self    The object pointer
+        """
+        print("check_box")
+        for check in self.check_box:
+            print(check.get())
+
+    def get_checkboxes(self):
+        """!
+        Converts checkbox to check_box_int
+        @param    self    The object pointer
+        @par      Global Variables Affected
+        @link     __check_box_int   @endlink\n
+        @link     check_box       @endlink\n
+        """
+        self.__check_box_int = []
+        for box in self.check_box:
+            self.__check_box_int.append(box.get())
+        return self.__check_box_int
+
+    def confirm_check(self):
+        """!
+        Confirms that there is a checkbox selected
+        @param  self    The object pointer
+        @par    Methods Called
+        @link   convert_boxes   @endlink
+
+        @return True    if at least one box is checked\n
+        False   if no boxes are checked
+        """
+        for box in self.get_checkboxes():
+            if box == 1:
+                return True
+        return False
 
 
 class CsvPlotter(tk.Tk):
@@ -199,45 +235,7 @@ class SelectColumns(tk.Frame):
                     self.context.title_row = row
 
 
-    def var_states(self):
-        """!
-        Prints the state of the checkbox variables
-        @param    self    The object pointer
-        """
-        print("check_box")
-        for check in self.context.check_box:
-            print(check.get())
 
-    def convert_boxes(self):
-        """!
-        Converts checkbox to check_box_int
-        @param    self    The object pointer
-        @par      Global Variables Affected
-        @link     check_box_int   @endlink\n
-        @link     check_box       @endlink\n
-        """
-        self.context.check_box_int = []
-        for box in self.context.check_box:
-            self.context.check_box_int.append(box.get())
-        #print(f"check_box: {self.context.check_box}")
-
-    def confirm_check(self):
-        """!
-        Confirms that there is a checkbox selected
-        @param  self    The object pointer
-        @par    Methods Called
-        @link   convert_boxes   @endlink
-
-        @return True    if at least one box is checked\n
-        False   if no boxes are checked
-        """
-        #self.var_states()
-        self.convert_boxes()
-        #print(f"check_box in confirm: {self.context.check_box}")
-        for box in self.context.check_box_int:
-            if box == 1:
-                return True
-        return False
 
 
     def graph(self):
@@ -252,7 +250,7 @@ class SelectColumns(tk.Frame):
         @link   widget_list     @endlink\n
         @link   spam            @endlink
         """
-        if self.confirm_check() is True:
+        if self.context.confirm_check() is True:
             self.main()
         else:
             if self.spam is False:
@@ -309,13 +307,12 @@ class SelectColumns(tk.Frame):
         @link   use_cols                                        @endlink\n
         @link   convert_boxes                                   @endlink\n
         @link   CsvPlotter.use_cols_titles  use_cols_titles     @endlink\n
-        @link   check_box_int                                   @endlink\n
+        @link   PlotterData.get_checkboxes                      @endlink\n
         @link   title_row                                       @endlink\n
         """
-        self.convert_boxes()
         self.context.use_cols_titles = []
         # num is the column index
-        for num, check in enumerate(self.context.check_box_int):
+        for num, check in enumerate(self.context.get_checkboxes()):
             if check == 1:
                 self.context.use_cols.append(num)
                 self.context.use_cols_titles.append(self.context.title_row[num])
