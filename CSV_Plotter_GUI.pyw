@@ -14,11 +14,15 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 
+from typing import List
+
 from dataclasses import dataclass
+from dataclasses import field
 import numpy as np
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
+import matplotlib.figure
 import matplotlib
 matplotlib.use("TkAgg")
 
@@ -31,6 +35,47 @@ class PlotterData:
     """!
     Class used to store and retrieve all data as well as modify it
     """
+    ## Page Title widget handle
+    title_label:    ttk.Label = field(init=False)
+
+    ## Handle to the 2nd array's Figure
+    fig:            matplotlib.figure.Figure = field(init=False)
+
+    ## 2d array of data pulled from CSV
+    file_data:      np.ndarray = field(init=False)
+
+    ## Titles of the selected column in use_cols
+    use_cols_titles: List[str] = field(default_factory=list)
+
+    ## Stores filename of CSV
+    filename:       str = field(default="")
+
+    ## Stores the frames that make up the app pages
+    frames:         list = field(default_factory=list)
+
+    ## List of widgets in frame
+    widget_list:    list = field(default_factory=list)
+
+    ## List of check boxes in column menu
+    check_box:      List[ttk.Checkbutton]= field(default_factory=list)
+
+    ## check_box represented as intigers
+    check_box_int:  List[int] = field(default_factory=list)
+
+    ## List of column titles
+    title_row:      List[str] = field(default_factory=list)
+
+    ## List of column indexes to import
+    use_cols:       List[int] = field(default_factory=list)
+
+    ## Row the title starts on in CSV
+    title_row_num:  int = field(default=1)
+
+    ## Prevents user from spamming button
+    spam:           bool = field(default=False)    # Probrobly should stay in SelectColumns
+
+    ## List of 2nd array's Line
+    line:           list = field(default_factory=list)
 
 
 class CsvPlotter(tk.Tk):
@@ -52,6 +97,8 @@ class CsvPlotter(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
+        context = PlotterData()
+
         ## Stores filename of CSV
         # @var string filename
         self.filename = ""
@@ -69,7 +116,7 @@ class CsvPlotter(tk.Tk):
         self.frames = {}
 
         for F in (GraphPage, SelectColumns):
-            frame = F(container, self)
+            frame = F(container, self, context)
             self.frames[F] = frame
             frame.grid(row=0,
                        column=0,
@@ -92,7 +139,7 @@ class SelectColumns(tk.Frame):
     Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, context):
 
         tk.Frame.__init__(self, parent)
 
@@ -108,6 +155,10 @@ class SelectColumns(tk.Frame):
         ## Object pointer to @link  CsvPlotter  controller  @endlink
         # @var controller
         self.controller = controller
+
+        ## Object pointer to @link PlotterData @endlink
+        # @var context
+        self.context = context
 
         ## List of widgets in frame
         # @var widget_list
@@ -360,7 +411,7 @@ class GraphPage(tk.Frame):
     Tk Frame that handles graphing selected data
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, context):
         tk.Frame.__init__(self, parent)
 
         label = tk.Label(self,
@@ -382,6 +433,10 @@ class GraphPage(tk.Frame):
         ## Object pointer to parent frame
         # @var parent
         self.parent = parent
+
+        ## Object pointer to @link PlotterData @endlink
+        # @var context
+        self.context = context
 
         ## List of widgets in frame
         # @var widget_list
