@@ -332,7 +332,7 @@ class SelectColumns(tk.Frame):
         @link   create_checkboxes   @endlink
 
         @par    Global Variables Affected
-        @link   CsvPlotter.use_cols_titles    use_cols_titles     @endlink
+        @link   PlotterData.use_cols_titles    use_cols_titles     @endlink
         """
         self.context.use_cols_titles = []
 
@@ -415,9 +415,9 @@ class GraphPage(tk.Frame):
         @param  self    The object pointer
         @par    Global Variables Affected
         @link   widget_list                                 @endlink\n
-        @link   CsvPlotter.data_array       data_array      @endlink\n
-        @link   CsvPlotter.use_cols_titles  use_cols_titles @endlink\n
-        @link   PlotterData.line            line            @endlink\n
+        @link   PlotterData.file_data        file_data      @endlink\n
+        @link   PlotterData.use_cols_titles use_cols_titles @endlink\n
+        @link   PlotterData.line             line           @endlink\n
         @link   fig                                         @endlink
 
         @par    Methods called
@@ -509,7 +509,7 @@ class GraphPage(tk.Frame):
         Updates the Graph Menu
         @param  self    The object pointer
         @par    Global variables affected
-        @link   use_cols_titles             @endlink\n
+        @link   PlotterData.use_cols_titles @endlink\n
         @link   PlotterData.line    line    @endlink\n
         @link   fig                         @endlink\n
         @link   widget_list                 @endlink
