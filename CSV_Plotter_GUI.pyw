@@ -149,14 +149,6 @@ class SelectColumns(tk.Frame):
         # @var widget_list
         self.widget_list = []
 
-        ## List of check boxes in column menu
-        # @var check_box
-        self.check_box = []
-
-        ## @link check_box @endlink represented as intigers
-        # @var check_box_int
-        self.check_box_int = []
-
         ## List of column titles
         # @var title_row
         self.title_row = []
@@ -225,7 +217,7 @@ class SelectColumns(tk.Frame):
         @param    self    The object pointer
         """
         print("check_box")
-        for check in self.check_box:
+        for check in self.context.check_box:
             print(check.get())
 
     def convert_boxes(self):
@@ -236,10 +228,10 @@ class SelectColumns(tk.Frame):
         @link     check_box_int   @endlink\n
         @link     check_box       @endlink\n
         """
-        self.check_box_int = []
-        for box in self.check_box:
-            self.check_box_int.append(box.get())
-        #print(f"check_box: {self.check_box}")
+        self.context.check_box_int = []
+        for box in self.context.check_box:
+            self.context.check_box_int.append(box.get())
+        #print(f"check_box: {self.context.check_box}")
 
     def confirm_check(self):
         """!
@@ -253,8 +245,8 @@ class SelectColumns(tk.Frame):
         """
         #self.var_states()
         self.convert_boxes()
-        #print(f"check_box in confirm: {self.check_box}")
-        for box in self.check_box_int:
+        #print(f"check_box in confirm: {self.context.check_box}")
+        for box in self.context.check_box_int:
             if box == 1:
                 return True
         return False
@@ -299,7 +291,7 @@ class SelectColumns(tk.Frame):
         @link   title_label @endlink\n
         @link   widget_list @endlink
         """
-        self.check_box = []
+        self.context.check_box = []
         self.title_label['text'] = os.path.basename(self.context.filename)
         for  _title in self.title_row:
             check = tk.IntVar()
@@ -309,7 +301,7 @@ class SelectColumns(tk.Frame):
                            )
             button.pack()
             self.widget_list.append(button)
-            self.check_box.append(check)
+            self.context.check_box.append(check)
 
         button = ttk.Button(self,
                            text="Go To Graph Page",
@@ -336,7 +328,7 @@ class SelectColumns(tk.Frame):
         self.convert_boxes()
         self.context.use_cols_titles = []
         # num is the column index
-        for num, check in enumerate(self.check_box_int):
+        for num, check in enumerate(self.context.check_box_int):
             if check == 1:
                 self.use_cols.append(num)
                 self.context.use_cols_titles.append(self.title_row[num])
