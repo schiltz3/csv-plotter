@@ -487,7 +487,8 @@ class GraphPage(tk.Frame):
         return data_array
     # dynamically make menu of lines to switch bottem graph to
     def update_graph_menu(self):
-        """Updates the Graph Menu
+        """!
+        Updates the Graph Menu
         @param  self    The object pointer
         @par    Global variables affected
         @link   use_cols_titles     @endlink\n
