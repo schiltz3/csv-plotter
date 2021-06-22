@@ -115,6 +115,11 @@ class PlotterEvents:
         self.data_class = data_class
 
     def TriggerEvent(self,event_id, *args):
+        """!
+        Runs function specified by event_id with args
+        @param  event_id    The key for the function in the events dictionary
+        @param  args        The args passed to the function
+        """
         print(f"Event ID: {event_id}")
         function = self.events.get(event_id)
         if len(args) > 0:
@@ -137,6 +142,10 @@ class PlotterEvents:
 
 
     def GetListOfEvents(self):
+        """!
+        returns a dictionary of events
+        @return self.events
+        """
         return self.events
 
 
