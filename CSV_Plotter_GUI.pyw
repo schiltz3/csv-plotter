@@ -35,6 +35,7 @@ class PlotterData:
     """!
     Class used to store and retrieve all data as well as modify it
     """
+    frames:     dict = field(default_factory=dict)
     ## Page Title widget handle
     title_label:    ttk.Label = field(init=False)
 
@@ -65,8 +66,7 @@ class PlotterData:
     ## List of check boxes in column menu
     check_box:      List[tk.IntVar]= field(default_factory=list)
 
-    ## check_box represented as intigers
-    __check_box_int:  List[int] = field(default_factory=list)
+    select_columns_widgets:     list = field(default_factory=list)
 
     def var_states(self):
         """!
@@ -77,26 +77,10 @@ class PlotterData:
         for check in self.check_box:
             print(check.get())
 
-    def get_checkboxes(self):
-        """!
-        Converts checkbox to check_box_int
-        @param    self    The object pointer
-        @par      Global Variables Affected
-        @link     __check_box_int   @endlink\n
-        @link     check_box       @endlink\n
-        """
-        self.__check_box_int = []
-        for box in self.check_box:
-            self.__check_box_int.append(box.get())
-        return self.__check_box_int
-
     def confirm_check(self):
         """!
         Confirms that there is a checkbox selected
         @param  self    The object pointer
-        @par    Methods Called
-        @link   convert_boxes   @endlink
-
         @return True    if at least one box is checked\n
         False   if no boxes are checked
         """
@@ -140,14 +124,14 @@ class CsvPlotter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         context = PlotterData()
+        self.context = context
 
         ## Stores the frames that make up the app pages
         # @var frames
-        self.frames = {}
 
         for F in (GraphPage, SelectColumns):
             frame = F(container, self, context)
-            self.frames[F] = frame
+            context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
                        sticky="nsew")
@@ -160,7 +144,7 @@ class CsvPlotter(tk.Tk):
         @param    self    the object pointer
         @param    cont    pointer to frame to raise
         """
-        frame = self.frames[cont]
+        frame = self.context.frames[cont]
         frame.tkraise()
 
 ##
@@ -193,64 +177,47 @@ class SelectColumns(tk.Frame):
 
         ## List of widgets in frame
         # @var widget_list
-        self.widget_list = []
-
-        ## List of column indexes to import
-        # @var use_cols
-        self.use_cols = []
 
         ## Prevents user from spamming button
         # @var spam
         self.spam = False
 
-        def select_file():
-            """!
-            Open file and get filename
-            @par    Methods Called
-            @link   main_init                                   @endlink
-            @par    Global Variables Affected
-            @link   self.context.filename       filename        @endlink \n
-            @link   SelectColumns.widget_list   widget_list     @endlink
-            """
-            self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
-            print(f"Context filename: {self.context.filename}")
-
-            if self.context.filename != '':
-                print(self.context.filename)
-                if len(self.widget_list) > 0:
-                    for bt in self.widget_list:
-                        print(bt)
-                        bt.destroy()
-
-                button.pack()
-                self.widget_list.append(button)
-                print("Entering main")
-                self.main_init()
-
         button = ttk.Button(self,
                             text="Select CSV",
-                            command=select_file)
+                            command=self.select_file)
         button.pack()
+        context.select_columns_widgets.append(button)
 
-
-    def get_title_row(self):
+    def clear_frame(self):
         """!
-        Open file and pull out column header data
-        @param    self                The object pointer
-        @par      Global Variables Affected
-        @link     CsvPlotter.filename filename        @endlink\n
-        @link     title_row_num       title_row_num   @endlink\n
-        @link     title_row           title_row       @endlink\n
+        Clear widget list
         """
-        with open(self.context.filename, newline='') as csvfile:
-            filedata = csv.reader(csvfile, delimiter=',')
-            for row in filedata:
-                if filedata.line_num == self.context.title_row_num :
-                    self.context.title_row = row
+        if len(self.context.select_columns_widgets) > 0:
+            for bt in self.context.select_columns_widgets:
+                print(bt)
+                bt.destroy()
 
+    def select_file(self):
+        """!
+        Open file and get filename
+        @par    Methods Called
+        @link   main_init                                   @endlink
+        @par    Global Variables Affected
+        @link   self.context.filename       filename        @endlink \n
+        @link   SelectColumns.widget_list   widget_list     @endlink
+        """
+        self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+        print(f"Context filename: {self.context.filename}")
 
-
-
+        if self.context.filename != '':
+            self.clear_frame()
+            button = ttk.Button(self,
+                                text="Select CSV",
+                                command=self.select_file)
+            button.pack()
+            self.context.select_columns_widgets.append(button)
+            print(self.context.filename)
+            self.main_init()
 
     def graph(self):
         """!
@@ -272,15 +239,15 @@ class SelectColumns(tk.Frame):
                 lable = ttk.Label(self,
                                  text="Select at least one Box")
                 lable.pack()
-                self.widget_list.append(lable)
+                self.context.select_columns_widgets.append(lable)
                 self.spam = True
             else:
-                self.widget_list.pop().destroy()
+                self.context.select_columns_widgets.pop().destroy()
                 lable = ttk.Label(self,
                                   text="Select at least one Box",
                                   font=('bold'))
                 lable.pack()
-                self.widget_list.append(lable)
+                self.context.select_columns_widgets.append(lable)
 
     def create_checkboxes(self):
         """!
@@ -300,14 +267,14 @@ class SelectColumns(tk.Frame):
                            variable=check
                            )
             button.pack()
-            self.widget_list.append(button)
+            self.context.select_columns_widgets.append(button)
             self.context.check_box.append(check)
 
         button = ttk.Button(self,
                            text="Go To Graph Page",
                            command=self.graph)
         button.pack()
-        self.widget_list.append(button)
+        self.context.select_columns_widgets.append(button)
 
 #        button = ttk.Button(self,text="Show",command=self.var_states)
 #        button.pack()
