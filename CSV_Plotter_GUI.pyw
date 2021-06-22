@@ -8,6 +8,7 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 import os
 import csv
 import types
+from typing import Callable
 from functools import partial
 
 import tkinter as tk
@@ -109,24 +110,33 @@ class PlotterEvents:
     Class that handles events for csv_plotter_gui
     """
     def __init__(self, data_class):
-        print(data_class)
-        self.events = {}
-        self.event_id_counter = 0
+        self.context = data_class
+        self.events = {"Testie":Callable,
+                       "Graph":Callable}
+        self.data_class = data_class
 
-    def TriggerEvent(self, parent, event_id, *args):
-        print(f"Parent: {parent}")
+    def TriggerEvent(self,event_id, *args):
         print(f"Event ID: {event_id}")
-        self.events.get(event_id)(parent, args)
+        function = self.events.get(event_id)
+        function(args)
 
-    def RegisterEvent(self, parent, function):
-        self.event_id_counter += 1
-        self.events[self.event_id_counter].append(parent).append(function)
-        return self.event_id_counter
-    
-def testieboy(parent, arg1, arg2):
-    print(parent)
-    print(arg1)
-    print(arg2)
+    def RegisterEvent(self, event_id, function):
+        """!
+        registers a function to a hook
+        @param  parent      The parent class of the function
+        @param  event_id    The String of one of the handles in self.events
+        @param  function    The function pointer
+        @return returns the preevious event list if one existed
+        """
+        _return = self.events.get(event_id)
+        self.events[event_id] = function
+        if _return:
+            return _return
+
+
+    def GetListOfEvents(self):
+        return self.events
+
 
 
 class CsvPlotter(tk.Tk):
@@ -151,17 +161,24 @@ class CsvPlotter(tk.Tk):
         context = PlotterData()
         self.context = context
 
+        events = PlotterEvents(context)
+        #events = context
+
         ## Stores the frames that make up the app pages
         # @var frames
 
-        for F in (GraphPage, SelectColumns):
-            frame = F(container, self, context)
+        for F in (TestiePage, GraphPage, SelectColumns):
+            frame = F(container, self, context, events)
             context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
                        sticky="nsew")
 
-        self.show_frame(SelectColumns)
+        #self.show_frame(SelectColumns)
+
+        events.RegisterEvent("Testie", self.testieboy)
+
+        self.show_frame(TestiePage)
 
     def show_frame(self, cont):
         """!
@@ -171,18 +188,27 @@ class CsvPlotter(tk.Tk):
         """
         frame = self.context.frames[cont]
         frame.tkraise()
+    def testieboy(self, *args):
+        print("Inside Testieboy")
 
 class TestiePage(tk.Frame):
     """!
     Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller, context):
+    def __init__(self, parent, controller, context, handler):
 
         tk.Frame.__init__(self, parent)
+
+
         button = ttk.Button(self,
-                            text="Select CSV",
-                            command=self.select_file)
+                            text="trigger testieboy",
+                            command=lambda: handler.TriggerEvent("Testie"))
+        button.pack()
+
+        button = ttk.Button(self,
+                            text="trigger Graph",
+                            command=lambda: handler.TriggerEvent("Graph"))
         button.pack()
 
 class SelectColumns(tk.Frame):
@@ -190,7 +216,7 @@ class SelectColumns(tk.Frame):
     Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller, context):
+    def __init__(self, parent, controller, context, handler):
 
         tk.Frame.__init__(self, parent)
 
@@ -383,7 +409,7 @@ class GraphPage(tk.Frame):
     Tk Frame that handles graphing selected data
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller, context):
+    def __init__(self, parent, controller, context, handler):
         tk.Frame.__init__(self, parent)
 
         label = tk.Label(self,
@@ -414,7 +440,9 @@ class GraphPage(tk.Frame):
         # @var widget_list
         self.widget_list = []
 
-    def main(self):
+        handler.RegisterEvent("Graph", self.main)
+
+    def main(self, *args):
         """!
         Called when Update Graph is clicked
         @param  self    The object pointer
@@ -429,6 +457,7 @@ class GraphPage(tk.Frame):
         @link   get_array                                   @endlink\n
         @link   update_graph_menu                           @endlink
         """
+        print(f"Args: {args}")
         print ("Graph Main:")
         print (f"file_data:\n{self.context.file_data}")
         print (f"use_cols_titles: {self.context.use_cols_titles}")
