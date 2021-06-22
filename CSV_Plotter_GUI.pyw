@@ -104,6 +104,26 @@ class PlotterData:
                 if file_handle.line_num == self.title_row_num :
                     self.title_row = row
 
+class PlotterEvents:
+    """!
+    Class that handles events for csv_plotter_gui
+    """
+    def __init__(self, data_class):
+        print(data_class)
+        self.events = {}
+        self.event_id_counter = 0
+
+    def TriggerEvent(self, parent, event_id):
+        print(f"Parent: {parent}")
+        print(f"Event ID: {event_id}")
+        self.events.get(event_id)
+
+    def RegisterEvent(self, parent, function):
+        self.event_id_counter += 1
+        self.events[self.event_id_counter].append(parent).append(function)
+        return self.event_id_counter
+
+
 class CsvPlotter(tk.Tk):
     """!
     Parent class for application
