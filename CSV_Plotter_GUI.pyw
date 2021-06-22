@@ -147,7 +147,6 @@ class CsvPlotter(tk.Tk):
         frame = self.context.frames[cont]
         frame.tkraise()
 
-##
 class SelectColumns(tk.Frame):
     """!
     Tk Frame that displays the data selection screen
@@ -271,10 +270,6 @@ class SelectColumns(tk.Frame):
                            command=self.graph)
         button.pack()
         self.context.select_columns_widgets.append(button)
-
-#        button = ttk.Button(self,text="Show",command=self.var_states)
-#        button.pack()
-#        self.widget_list.append(button)
 
     def get_column_titles(self):
         """!
