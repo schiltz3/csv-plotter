@@ -401,9 +401,6 @@ class GraphPage(tk.Frame):
         button1 = ttk.Button(self,text="Select Columns",
                              command=lambda:controller.show_frame(SelectColumns))
         button1.pack()
-        button = ttk.Button(self, text="Update Graph",
-                            command=self.main)
-        button.pack()
 
         ## Object pointer to @link  CsvPlotter  controller  @endlink
         # @var controller
@@ -439,8 +436,8 @@ class GraphPage(tk.Frame):
         @link   update_graph_menu                           @endlink
         """
         print ("Graph Main:")
-        print (f"file_data:\n{self.context.file_data}")
-        print (f"use_cols_titles: {self.context.use_cols_titles}")
+        #print (f"file_data:\n{self.context.file_data}")
+        #print (f"use_cols_titles: {self.context.use_cols_titles}")
 
         for widget in self.widget_list:
             widget.destroy()
