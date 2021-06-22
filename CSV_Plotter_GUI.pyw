@@ -113,10 +113,10 @@ class PlotterEvents:
         self.events = {}
         self.event_id_counter = 0
 
-    def TriggerEvent(self, parent, event_id):
+    def TriggerEvent(self, parent, event_id, *args):
         print(f"Parent: {parent}")
         print(f"Event ID: {event_id}")
-        self.events.get(event_id)
+        self.events.get(event_id)(parent, args)
 
     def RegisterEvent(self, parent, function):
         self.event_id_counter += 1
