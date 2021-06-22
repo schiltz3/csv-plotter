@@ -117,7 +117,10 @@ class PlotterEvents:
     def TriggerEvent(self,event_id, *args):
         print(f"Event ID: {event_id}")
         function = self.events.get(event_id)
-        function(args)
+        if len(args) > 0:
+            function(args)
+        else:
+            function()
 
     def RegisterEvent(self, event_id, function):
         """!
@@ -415,7 +418,7 @@ class GraphPage(tk.Frame):
 
         handler.RegisterEvent("Graph", self.main)
 
-    def main(self, *args):
+    def main(self):
         """!
         Called when Update Graph is clicked
         @param  self    The object pointer
