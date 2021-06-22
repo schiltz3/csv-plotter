@@ -111,8 +111,7 @@ class PlotterEvents:
     """
     def __init__(self, data_class):
         self.context = data_class
-        self.events = {"Testie":Callable,
-                       "Graph":Callable}
+        self.events = {"Graph":Callable}
         self.data_class = data_class
 
     def TriggerEvent(self,event_id, *args):
@@ -167,18 +166,14 @@ class CsvPlotter(tk.Tk):
         ## Stores the frames that make up the app pages
         # @var frames
 
-        for F in (TestiePage, GraphPage, SelectColumns):
+        for F in (GraphPage, SelectColumns):
             frame = F(container, self, context, events)
             context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
                        sticky="nsew")
 
-        #self.show_frame(SelectColumns)
-
-        events.RegisterEvent("Testie", self.testieboy)
-
-        self.show_frame(TestiePage)
+        self.show_frame(SelectColumns)
 
     def show_frame(self, cont):
         """!
@@ -188,28 +183,6 @@ class CsvPlotter(tk.Tk):
         """
         frame = self.context.frames[cont]
         frame.tkraise()
-    def testieboy(self, *args):
-        print("Inside Testieboy")
-
-class TestiePage(tk.Frame):
-    """!
-    Tk Frame that displays the data selection screen
-    @extends  tk.Frame
-    """
-    def __init__(self, parent, controller, context, handler):
-
-        tk.Frame.__init__(self, parent)
-
-
-        button = ttk.Button(self,
-                            text="trigger testieboy",
-                            command=lambda: handler.TriggerEvent("Testie"))
-        button.pack()
-
-        button = ttk.Button(self,
-                            text="trigger Graph",
-                            command=lambda: handler.TriggerEvent("Graph"))
-        button.pack()
 
 class SelectColumns(tk.Frame):
     """!
