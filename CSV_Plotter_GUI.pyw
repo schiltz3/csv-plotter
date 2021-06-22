@@ -14,11 +14,15 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 
+from typing import List
+
 from dataclasses import dataclass
+from dataclasses import field
 import numpy as np
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
+import matplotlib.figure
 import matplotlib
 matplotlib.use("TkAgg")
 
@@ -26,7 +30,79 @@ matplotlib.use("TkAgg")
 
 LARGE_FONT= ("Verdana", 12)
 
+@dataclass
+class PlotterData:
+    """!
+    Class used to store and retrieve all data as well as modify it
+    """
+    frames:     dict = field(default_factory=dict)
+    ## Page Title widget handle
+    title_label:    ttk.Label = field(init=False)
 
+    ## Handle to the 2nd array's Figure
+    fig:            matplotlib.figure.Figure = field(init=False)
+
+    ## 2d array of data pulled from CSV
+    file_data:      np.ndarray = field(init=False)
+
+    ## Titles of the selected column in use_cols
+    use_cols_titles: List[str] = field(default_factory=list)
+
+    ## Stores filename of CSV
+    filename:       str = field(default="")
+
+    ## List of column titles
+    title_row:      List[str] = field(default_factory=list)
+
+    ## List of column indexes to import
+    use_cols:       List[int] = field(default_factory=list)
+
+    ## Row the title starts on in CSV
+    title_row_num:  int = field(default=1)
+
+    ## List of 2nd array's Line
+    line:           list = field(default_factory=list)
+
+    ## List of check boxes in column menu
+    check_box:      List[tk.IntVar]= field(default_factory=list)
+
+    select_columns_widgets:     list = field(default_factory=list)
+
+    def var_states(self):
+        """!
+        Prints the state of the checkbox variables
+        @param    self    The object pointer
+        """
+        print("check_box")
+        for check in self.check_box:
+            print(check.get())
+
+    def confirm_check(self):
+        """!
+        Confirms that there is a checkbox selected
+        @param  self    The object pointer
+        @return True    if at least one box is checked\n
+        False   if no boxes are checked
+        """
+        for box in self.check_box:
+            if box.get() == 1:
+                return True
+        return False
+
+    def get_title_row(self):
+        """!
+        Open file and pull out column header data
+        @param    self                The object pointer
+        @par      Global Variables Affected
+        @link     CsvPlotter.filename filename        @endlink\n
+        @link     title_row_num       title_row_num   @endlink\n
+        @link     title_row           title_row       @endlink\n
+        """
+        with open(self.filename, newline='') as csvfile:
+            file_handle = csv.reader(csvfile, delimiter=',')
+            for row in file_handle:
+                if file_handle.line_num == self.title_row_num :
+                    self.title_row = row
 
 class CsvPlotter(tk.Tk):
     """!
@@ -47,25 +123,15 @@ class CsvPlotter(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        ## Stores filename of CSV
-        # @var string filename
-        self.filename = ""
-
-        ## Titles of the selected column in @link SelectColumns.use_cols use_cols@endlink
-        # @var use_cols_titles
-        self.use_cols_titles = []
-
-        ## 2d array of data pulled from CSV
-        # @var data_array
-        self.data_array = None
+        context = PlotterData()
+        self.context = context
 
         ## Stores the frames that make up the app pages
         # @var frames
-        self.frames = {}
 
         for F in (GraphPage, SelectColumns):
-            frame = F(container, self)
-            self.frames[F] = frame
+            frame = F(container, self, context)
+            context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
                        sticky="nsew")
@@ -78,23 +144,18 @@ class CsvPlotter(tk.Tk):
         @param    self    the object pointer
         @param    cont    pointer to frame to raise
         """
-        frame = self.frames[cont]
+        frame = self.context.frames[cont]
         frame.tkraise()
 
-##
 class SelectColumns(tk.Frame):
     """!
     Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, context):
 
         tk.Frame.__init__(self, parent)
 
-        ## Page Title widget handle
-        # @var title_label
-        self.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
-        self.title_label.pack(pady=10,padx=10)
 
         ## Object pointer to parent frame
         # @var parent
@@ -104,119 +165,58 @@ class SelectColumns(tk.Frame):
         # @var controller
         self.controller = controller
 
+        ## Object pointer to @link PlotterData @endlink
+        # @var context
+        self.context = context
+
+        ## Page Title widget handle
+        # @var title_label
+        context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
+        context.title_label.pack(pady=10,padx=10)
+
         ## List of widgets in frame
         # @var widget_list
-        self.widget_list = []
-
-        ## List of check boxes in column menu
-        # @var check_box
-        self.check_box = []
-
-        ## @link check_box @endlink represented as intigers
-        # @var check_box_int
-        self.check_box_int = []
-
-        ## List of column titles
-        # @var title_row
-        self.title_row = []
-
-        ## List of column indexes to import
-        # @var use_cols
-        self.use_cols = []
-
-        ## Row the title starts on in CSV
-        # @var title_row_num
-        self.title_row_num = 1
 
         ## Prevents user from spamming button
         # @var spam
         self.spam = False
 
-        def select_file():
-            """!
-            Open file and get filename
-            @par    Methods Called
-            @link   main_init                                   @endlink
-            @par    Global Variables Affected
-            @link   self.controller.filename    widget_list     @endlink \n
-            @link   SelectColumns.widget_list   widget_list     @endlink
-            """
-            self.controller.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
-
-            if controller.filename != '':
-                print(controller.filename)
-                if len(self.widget_list) > 0:
-                    for bt in self.widget_list:
-                        print(bt)
-                        bt.destroy()
-
-                button.pack()
-                self.widget_list.append(button)
-                print("Entering main")
-                self.main_init()
-
         button = ttk.Button(self,
                             text="Select CSV",
-                            command=select_file)
+                            command=self.select_file)
         button.pack()
+        context.select_columns_widgets.append(button)
 
-
-    def get_title_row(self):
+    def clear_frame(self):
         """!
-        Open file and pull out column header data
-        @param    self                The object pointer
-        @par      Global Variables Affected
-        @link     CsvPlotter.filename filename        @endlink\n
-        @link     title_row_num       title_row_num   @endlink\n
-        @link     title_row           title_row       @endlink\n
+        Clear widget list
         """
-        with open(self.controller.filename, newline='') as csvfile:
-            filedata = csv.reader(csvfile, delimiter=',')
-            for row in filedata:
-                if filedata.line_num == self.title_row_num :
-                    self.title_row = row
+        if len(self.context.select_columns_widgets) > 0:
+            for button in self.context.select_columns_widgets:
+                print(button)
+                button.destroy()
 
-
-    def var_states(self):
+    def select_file(self):
         """!
-        Prints the state of the checkbox variables
-        @param    self    The object pointer
-        """
-        print("check_box")
-        for check in self.check_box:
-            print(check.get())
-
-    def convert_boxes(self):
-        """!
-        Converts checkbox to check_box_int
-        @param    self    The object pointer
-        @par      Global Variables Affected
-        @link     check_box_int   @endlink\n
-        @link     check_box       @endlink\n
-        """
-        self.check_box_int = []
-        for box in self.check_box:
-            self.check_box_int.append(box.get())
-        #print(f"check_box: {self.check_box}")
-
-    def confirm_check(self):
-        """!
-        Confirms that there is a checkbox selected
-        @param  self    The object pointer
+        Open file and get filename
         @par    Methods Called
-        @link   convert_boxes   @endlink
-
-        @return True    if at least one box is checked\n
-        False   if no boxes are checked
+        @link   main_init                                   @endlink
+        @par    Global Variables Affected
+        @link   self.context.filename       filename        @endlink \n
+        @link   SelectColumns.widget_list   widget_list     @endlink
         """
-        #self.var_states()
-        self.convert_boxes()
-        #print(f"check_box in confirm: {self.check_box}")
-        for box in self.check_box_int:
-            if box == 1:
-                return True
-        return False
+        self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+        print(f"Context filename: {self.context.filename}")
 
+        if self.context.filename != '':
+            self.clear_frame()
+            button = ttk.Button(self,
+                                text="Select CSV",
+                                command=self.select_file)
+            button.pack()
+            self.context.select_columns_widgets.append(button)
+            print(self.context.filename)
+            self.main_init()
 
     def graph(self):
         """!
@@ -230,23 +230,19 @@ class SelectColumns(tk.Frame):
         @link   widget_list     @endlink\n
         @link   spam            @endlink
         """
-        if self.confirm_check() is True:
+        if self.context.confirm_check() is True:
+            if self.spam is True:
+                self.context.select_columns_widgets.pop().destroy()
+            self.spam = False
             self.main()
-        else:
-            if self.spam is False:
-                print("Select at least one Box")
-                lable = ttk.Label(self,
-                                 text="Select at least one Box")
-                lable.pack()
-                self.widget_list.append(lable)
-                self.spam = True
-            else:
-                self.widget_list.pop().destroy()
-                lable = ttk.Label(self,
-                                  text="Select at least one Box",
-                                  font=('bold'))
-                lable.pack()
-                self.widget_list.append(lable)
+        elif self.spam is False:
+            print("Select at least one Box")
+            lable = ttk.Label(self,
+                             text="Select at least one Box",
+                             font=('bold'))
+            lable.pack()
+            self.context.select_columns_widgets.append(lable)
+            self.spam = True
 
     def create_checkboxes(self):
         """!
@@ -257,47 +253,41 @@ class SelectColumns(tk.Frame):
         @link   title_label @endlink\n
         @link   widget_list @endlink
         """
-        self.check_box = []
-        self.title_label['text'] = os.path.basename(self.controller.filename)
-        for  _title in self.title_row:
+        self.context.check_box = []
+        self.context.title_label['text'] = os.path.basename(self.context.filename)
+        for  _title in self.context.title_row:
             check = tk.IntVar()
             button = ttk.Checkbutton(self,
                            text=_title,
                            variable=check
                            )
             button.pack()
-            self.widget_list.append(button)
-            self.check_box.append(check)
+            self.context.select_columns_widgets.append(button)
+            self.context.check_box.append(check)
 
         button = ttk.Button(self,
                            text="Go To Graph Page",
                            command=self.graph)
         button.pack()
-        self.widget_list.append(button)
-
-#        button = ttk.Button(self,text="Show",command=self.var_states)
-#        button.pack()
-#        self.widget_list.append(button)
+        self.context.select_columns_widgets.append(button)
 
     def get_column_titles(self):
         """!
         Generates Names and Indexes of tiles
         @param  self     The object pointer
         @par Global Variables Affected
-        @link   use_cols                                        @endlink\n
+        @link   PlotterData.use_cols                            @endlink\n
         @link   convert_boxes                                   @endlink\n
         @link   CsvPlotter.use_cols_titles  use_cols_titles     @endlink\n
-        @link   check_box_int                                   @endlink\n
+        @link   PlotterData.checkboxes                          @endlink\n
         @link   title_row                                       @endlink\n
         """
-        self.use_cols = []
-        self.convert_boxes()
-        self.controller.use_cols_titles = []
+        self.context.use_cols_titles = []
         # num is the column index
-        for num, check in enumerate(self.check_box_int):
-            if check == 1:
-                self.use_cols.append(num)
-                self.controller.use_cols_titles.append(self.title_row[num])
+        for num, check in enumerate(self.context.check_box):
+            if check.get() == 1:
+                self.context.use_cols.append(num)
+                self.context.use_cols_titles.append(self.context.title_row[num])
 
     def main_init(self):
         """!
@@ -309,13 +299,13 @@ class SelectColumns(tk.Frame):
         @link   create_checkboxes   @endlink
 
         @par    Global Variables Affected
-        @link   CsvPlotter.use_cols_titles    use_cols_titles     @endlink
+        @link   PlotterData.use_cols_titles    use_cols_titles     @endlink
         """
-        self.controller.use_cols_titles = []
+        self.context.use_cols_titles = []
 
         # Get the title row from doc
-        self.get_title_row()
-        print(self.title_row)
+        self.context.get_title_row()
+        print(self.context.title_row)
         # Create Check box menu from title row
         self.create_checkboxes()
         print("Created menu")
@@ -334,19 +324,19 @@ class SelectColumns(tk.Frame):
         """
         # Get columns and column Titles selected in the checkbox menu from doc
         self.get_column_titles()
-        print(f"Main use_cols_titles: {self.controller.use_cols_titles}")
+        print(f"Main use_cols_titles: {self.context.use_cols_titles}")
 
 
         # Open file and create 2D array from data
-        self.controller.data_array = np.genfromtxt(self.controller.filename,
+        self.context.file_data = np.genfromtxt(self.context.filename,
                                   dtype=int,
                                   delimiter=",",
-                                  skip_header=self.title_row_num,
-                                  usecols = self.use_cols,
+                                  skip_header=self.context.title_row_num,
+                                  usecols = self.context.use_cols,
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
-        print(self.controller.data_array)
+        print(self.context.file_data)
         self.controller.show_frame(GraphPage)
 
 
@@ -355,7 +345,7 @@ class GraphPage(tk.Frame):
     Tk Frame that handles graphing selected data
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, context):
         tk.Frame.__init__(self, parent)
 
         label = tk.Label(self,
@@ -378,18 +368,13 @@ class GraphPage(tk.Frame):
         # @var parent
         self.parent = parent
 
+        ## Object pointer to @link PlotterData @endlink
+        # @var context
+        self.context = context
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
-
-        ## Handle to 2nd array's Line
-        # @var ln2
-        self.ln2 = None
-
-        ## Handle to the 2nd array's Figure
-        # @var fig
-        self.fig = None
-
 
     def main(self):
         """!
@@ -397,9 +382,9 @@ class GraphPage(tk.Frame):
         @param  self    The object pointer
         @par    Global Variables Affected
         @link   widget_list                                 @endlink\n
-        @link   CsvPlotter.data_array       data_array      @endlink\n
-        @link   CsvPlotter.use_cols_titles  use_cols_titles @endlink\n
-        @link   ln2                                         @endlink\n
+        @link   PlotterData.file_data        file_data      @endlink\n
+        @link   PlotterData.use_cols_titles use_cols_titles @endlink\n
+        @link   PlotterData.line             line           @endlink\n
         @link   fig                                         @endlink
 
         @par    Methods called
@@ -407,16 +392,16 @@ class GraphPage(tk.Frame):
         @link   update_graph_menu                           @endlink
         """
         print ("Graph Main:")
-        print (f"data_array:\n{self.controller.data_array}")
-        print (f"use_cols_titles: {self.controller.use_cols_titles}")
+        print (f"file_data:\n{self.context.file_data}")
+        print (f"use_cols_titles: {self.context.use_cols_titles}")
 
         for widget in self.widget_list:
             widget.destroy()
 
-        self.ln2, self.fig = self.plotcsv(self.controller.data_array,
-                self.controller.use_cols_titles,
-                self.get_array(self.controller.data_array, -1),
-                self.controller.use_cols_titles[-1])
+        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
+                self.context.use_cols_titles,
+                self.get_array(self.context.file_data, -1),
+                self.context.use_cols_titles[-1])
         self.update_graph_menu()
 
         self.controller.eval('tk::PlaceWindow . center')
@@ -491,21 +476,21 @@ class GraphPage(tk.Frame):
         Updates the Graph Menu
         @param  self    The object pointer
         @par    Global variables affected
-        @link   use_cols_titles     @endlink\n
-        @link   ln2                 @endlink\n
-        @link   fig                 @endlink\n
-        @link   widget_list         @endlink
+        @link   PlotterData.use_cols_titles @endlink\n
+        @link   PlotterData.line    line    @endlink\n
+        @link   fig                         @endlink\n
+        @link   widget_list                 @endlink
         """
 
         #pylint: disable=invalid-name
         _column = 0
-        for _column, title in enumerate(self.controller.use_cols_titles):
+        for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
                       text=title,
                       command=partial(self.update_graph,
-                      self.ln2,
-                      self.fig,
-                      self.get_array(self.controller.data_array,_column),
+                      self.context.line,
+                      self.context.fig,
+                      self.get_array(self.context.file_data,_column),
                       title)
                       )
             button.pack(side=tk.LEFT,pady=4)
