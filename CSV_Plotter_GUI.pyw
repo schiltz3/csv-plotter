@@ -7,6 +7,7 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 
 import os
 import csv
+from csv import reader
 import types
 from functools import partial
 
@@ -193,9 +194,9 @@ class SelectColumns(tk.Frame):
         Clear widget list
         """
         if len(self.context.select_columns_widgets) > 0:
-            for bt in self.context.select_columns_widgets:
-                print(bt)
-                bt.destroy()
+            for button in self.context.select_columns_widgets:
+                print(button)
+                button.destroy()
 
     def select_file(self):
         """!
