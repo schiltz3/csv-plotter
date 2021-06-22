@@ -122,6 +122,11 @@ class PlotterEvents:
         self.event_id_counter += 1
         self.events[self.event_id_counter].append(parent).append(function)
         return self.event_id_counter
+    
+def testieboy(parent, arg1, arg2):
+    print(parent)
+    print(arg1)
+    print(arg2)
 
 
 class CsvPlotter(tk.Tk):
@@ -166,6 +171,19 @@ class CsvPlotter(tk.Tk):
         """
         frame = self.context.frames[cont]
         frame.tkraise()
+
+class TestiePage(tk.Frame):
+    """!
+    Tk Frame that displays the data selection screen
+    @extends  tk.Frame
+    """
+    def __init__(self, parent, controller, context):
+
+        tk.Frame.__init__(self, parent)
+        button = ttk.Button(self,
+                            text="Select CSV",
+                            command=self.select_file)
+        button.pack()
 
 class SelectColumns(tk.Frame):
     """!
