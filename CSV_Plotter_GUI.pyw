@@ -549,7 +549,7 @@ class GraphPage(tk.Frame):
         #pylint: enable-msg=invalid-name
 
     #pylint: disable=too-many-arguments
-    def update_graph(self, y_data, _use_cols_titles, x_data=None, xlab=None, ylab=None, xrange=None, yrange=None):
+    def update_graph(self, y_data, _use_cols_titles, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
         @param  y_data              Data to change graph's Y values to
@@ -564,19 +564,22 @@ class GraphPage(tk.Frame):
         """
 
         #x_data, y_data, xlab, ylab = fourier(y_data)
+        #xrange=None, yrange=None
+        if kwargs["x_data"]:
+            self.context.line[0].set_xdata(kwargs["x_data"])
 
         self.context.line[0].set_ydata(y_data)
-        if x_data is not None:
-            self.context.line[0].set_xdata(x_data)
         axes = self.context.fig.get_axes()
         axes[1].legend((self.context.line[0],),
                        (_use_cols_titles,),
                        loc=1,
                        bbox_to_anchor=(1.085,1))
-        if xlab is not None:
-            axes[1].set_xlabel(xlab)
-        if ylab is not None:
-            axes[1].set_ylabel(ylab)
+
+        if kwargs["xlab"]:
+            axes[1].set_xlabel(kwargs["xlab"])
+        if kwargs["ylab"]:
+            axes[1].set_ylabel(kwargs["ylab"])
+
         axes[1].relim()
         axes[1].autoscale(enable=True,
                           axis='both',
