@@ -111,8 +111,7 @@ class PlotterEvents:
     """
     def __init__(self, data_class):
         self.context = data_class
-        self.events = {"Graph":Callable}
-        self.data_class = data_class
+        self.events = {str:Callable}
 
     def TriggerEvent(self,event_id, *args):
         """!
