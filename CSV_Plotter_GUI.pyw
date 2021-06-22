@@ -549,41 +549,49 @@ class GraphPage(tk.Frame):
         #pylint: enable-msg=invalid-name
 
     #pylint: disable=too-many-arguments
-    def update_graph(self, y_data, _use_cols_titles, **kwargs):
+    def update_graph(self, y_data, legend, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
-        @param  y_data              Data to change graph's Y values to
+        @param  y_data              Array to change graph's Y values to
         @param  _use_cols_titles    The legend to apply
         @param  x_data              [optional]  Data to change graph's X values to
-        @param  xlab                [optional]  String to set X lable to
-        @param  ylab                [optional]  String to set Y lable to
-        @param  xrange              [optional]  Touple of lower and upper bounds
+        @param  x_lab               [optional]  String to set X lable to
+        @param  y_lab               [optional]  String to set Y lable to
+        @param  x_range             [optional]  Touple of lower and upper bounds
         for x range (Currently not implemented)
-        @param  yrange              [optional]  Touple of lower and upper bounds
+        @param  y_range             [optional]  Touple of lower and upper bounds
         for y range (Currently not implemented)
         """
 
         #x_data, y_data, xlab, ylab = fourier(y_data)
-        #xrange=None, yrange=None
-        if kwargs["x_data"]:
-            self.context.line[0].set_xdata(kwargs["x_data"])
+
+        if kwargs.get("x_data"):
+            self.context.line[0].set_xdata(kwargs.get("x_data"))
 
         self.context.line[0].set_ydata(y_data)
-        axes = self.context.fig.get_axes()
-        axes[1].legend((self.context.line[0],),
-                       (_use_cols_titles,),
+        axis = self.context.fig.get_axes()[1]
+        axis.legend((self.context.line[0],),
+                       (legend,),
                        loc=1,
                        bbox_to_anchor=(1.085,1))
 
-        if kwargs["xlab"]:
-            axes[1].set_xlabel(kwargs["xlab"])
-        if kwargs["ylab"]:
-            axes[1].set_ylabel(kwargs["ylab"])
+        if "x_lab" in kwargs:
+            axis.set_xlabel(kwargs.get("x_lab"))
+        if "y_lab" in kwargs:
+            axis.set_ylabel(kwargs.get("y_lab"))
 
-        axes[1].relim()
-        axes[1].autoscale(enable=True,
-                          axis='both',
-                          tight=True)
+        axis.relim()
+        axis.margins()
+        axis.set_autoscale_on(False)
+        if "x_range" in kwargs:
+            axis.set_xscale = kwargs["x_range"]
+            axis.set_autoscalex_on(True)
+        if "y_range" in kwargs:
+            axis.set_yscale = kwargs["y_range"]
+            axis.set_autoscaley_on(True)
+        if "y_range" not in kwargs and "x_range" not in kwargs:
+            axis.autoscale(enable=True,axis='both',tight=True)
+
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
     #pylint: enable-msg=too-many-arguments
