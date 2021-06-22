@@ -232,22 +232,18 @@ class SelectColumns(tk.Frame):
         @link   spam            @endlink
         """
         if self.context.confirm_check() is True:
-            self.main()
-        else:
-            if self.spam is False:
-                print("Select at least one Box")
-                lable = ttk.Label(self,
-                                 text="Select at least one Box")
-                lable.pack()
-                self.context.select_columns_widgets.append(lable)
-                self.spam = True
-            else:
+            if self.spam is True:
                 self.context.select_columns_widgets.pop().destroy()
-                lable = ttk.Label(self,
-                                  text="Select at least one Box",
-                                  font=('bold'))
-                lable.pack()
-                self.context.select_columns_widgets.append(lable)
+            self.spam = False
+            self.main()
+        elif self.spam is False:
+            print("Select at least one Box")
+            lable = ttk.Label(self,
+                             text="Select at least one Box",
+                             font=('bold'))
+            lable.pack()
+            self.context.select_columns_widgets.append(lable)
+            self.spam = True
 
     def create_checkboxes(self):
         """!
