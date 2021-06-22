@@ -113,7 +113,7 @@ class PlotterEvents:
         self.context = data_class
         self.events = {str:Callable}
 
-    def TriggerEvent(self,event_id, *args):
+    def trigger_event(self,event_id, *args):
         """!
         Runs function specified by event_id with args
         @param  event_id    The key for the function in the events dictionary
@@ -126,7 +126,7 @@ class PlotterEvents:
         else:
             function()
 
-    def RegisterEvent(self, event_id, function):
+    def register_event(self, event_id, function):
         """!
         registers a function to a hook
         @param  parent      The parent class of the function
@@ -139,8 +139,7 @@ class PlotterEvents:
         if _return:
             return _return
 
-
-    def GetListOfEvents(self):
+    def get_list_of_events(self):
         """!
         returns a dictionary of events
         @return self.events
@@ -255,7 +254,8 @@ class SelectColumns(tk.Frame):
         @link   self.context.filename       filename        @endlink \n
         @link   SelectColumns.widget_list   widget_list     @endlink
         """
-        self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+        self.context.filename = askopenfilename(parent = self.controller,
+                                                filetypes=[("CSV","*.csv")])
         print(f"Context filename: {self.context.filename}")
 
         if self.context.filename != '':
@@ -389,7 +389,7 @@ class SelectColumns(tk.Frame):
                                   filling_values=0)
         #print(np.info(dataArray))
         print(self.context.file_data)
-        self.handler.TriggerEvent("Graph")
+        self.handler.trigger_event("Graph")
         self.controller.show_frame(GraphPage)
 
 
@@ -426,8 +426,8 @@ class GraphPage(tk.Frame):
         # @var widget_list
         self.widget_list = []
 
-        handler.RegisterEvent("Graph", self.main)
-        handler.RegisterEvent("UpdateGraph", self.update_graph)
+        handler.register_event("Graph", self.main)
+        handler.register_event("UpdateGraph", self.update_graph)
 
     def main(self):
         """!
@@ -535,7 +535,6 @@ class GraphPage(tk.Frame):
         @link   widget_list                 @endlink
         """
 
-        #pylint: disable=invalid-name
         _column = 0
         for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
@@ -546,9 +545,7 @@ class GraphPage(tk.Frame):
                       )
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
-        #pylint: enable-msg=invalid-name
 
-    #pylint: disable=too-many-arguments
     def update_graph(self, y_data, legend, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
@@ -594,7 +591,6 @@ class GraphPage(tk.Frame):
 
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
-    #pylint: enable-msg=too-many-arguments
 
 
 
