@@ -427,6 +427,7 @@ class GraphPage(tk.Frame):
         self.widget_list = []
 
         handler.RegisterEvent("Graph", self.main)
+        handler.RegisterEvent("UpdateGraph", self.update_graph)
 
     def main(self):
         """!
