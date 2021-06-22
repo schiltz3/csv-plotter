@@ -209,6 +209,8 @@ class SelectColumns(tk.Frame):
         # @var context
         self.context = context
 
+        self.handler = handler
+
         ## Page Title widget handle
         # @var title_label
         context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
@@ -433,7 +435,6 @@ class GraphPage(tk.Frame):
         @link   get_array                                   @endlink\n
         @link   update_graph_menu                           @endlink
         """
-        print(f"Args: {args}")
         print ("Graph Main:")
         print (f"file_data:\n{self.context.file_data}")
         print (f"use_cols_titles: {self.context.use_cols_titles}")
