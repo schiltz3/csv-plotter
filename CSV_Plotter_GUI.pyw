@@ -7,7 +7,6 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 
 import os
 import csv
-from csv import reader
 import types
 from functools import partial
 
