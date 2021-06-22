@@ -324,6 +324,7 @@ class SelectColumns(tk.Frame):
         @link   PlotterData.checkboxes                          @endlink\n
         @link   title_row                                       @endlink\n
         """
+        self.context.use_cols = []
         self.context.use_cols_titles = []
         # num is the column index
         for num, check in enumerate(self.context.check_box):
