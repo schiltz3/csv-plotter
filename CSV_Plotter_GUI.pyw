@@ -100,11 +100,25 @@ class PlotterData:
         @return True    if at least one box is checked\n
         False   if no boxes are checked
         """
-        for box in self.get_checkboxes():
-            if box == 1:
+        for box in self.check_box:
+            if box.get() == 1:
                 return True
         return False
 
+    def get_title_row(self):
+        """!
+        Open file and pull out column header data
+        @param    self                The object pointer
+        @par      Global Variables Affected
+        @link     CsvPlotter.filename filename        @endlink\n
+        @link     title_row_num       title_row_num   @endlink\n
+        @link     title_row           title_row       @endlink\n
+        """
+        with open(self.filename, newline='') as csvfile:
+            file_handle = csv.reader(csvfile, delimiter=',')
+            for row in file_handle:
+                if file_handle.line_num == self.title_row_num :
+                    self.title_row = row
 
 class CsvPlotter(tk.Tk):
     """!
@@ -304,16 +318,16 @@ class SelectColumns(tk.Frame):
         Generates Names and Indexes of tiles
         @param  self     The object pointer
         @par Global Variables Affected
-        @link   use_cols                                        @endlink\n
+        @link   PlotterData.use_cols                            @endlink\n
         @link   convert_boxes                                   @endlink\n
         @link   CsvPlotter.use_cols_titles  use_cols_titles     @endlink\n
-        @link   PlotterData.get_checkboxes                      @endlink\n
+        @link   PlotterData.checkboxes                          @endlink\n
         @link   title_row                                       @endlink\n
         """
         self.context.use_cols_titles = []
         # num is the column index
-        for num, check in enumerate(self.context.get_checkboxes()):
-            if check == 1:
+        for num, check in enumerate(self.context.check_box):
+            if check.get() == 1:
                 self.context.use_cols.append(num)
                 self.context.use_cols_titles.append(self.context.title_row[num])
 
@@ -332,7 +346,7 @@ class SelectColumns(tk.Frame):
         self.context.use_cols_titles = []
 
         # Get the title row from doc
-        self.get_title_row()
+        self.context.get_title_row()
         print(self.context.title_row)
         # Create Check box menu from title row
         self.create_checkboxes()
