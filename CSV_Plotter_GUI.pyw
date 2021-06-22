@@ -367,7 +367,8 @@ class SelectColumns(tk.Frame):
         """
         # Get columns and column Titles selected in the checkbox menu from doc
         self.get_column_titles()
-        print(f"Main use_cols_titles: {self.context.use_cols_titles}")
+        print(f"use_cols_titles: {self.context.use_cols_titles}")
+        print(f"use_cols: {self.context.use_cols}")
 
 
         # Open file and create 2D array from data
@@ -380,6 +381,7 @@ class SelectColumns(tk.Frame):
                                   filling_values=0)
         #print(np.info(dataArray))
         print(self.context.file_data)
+        self.handler.TriggerEvent("Graph")
         self.controller.show_frame(GraphPage)
 
 
