@@ -541,8 +541,6 @@ class GraphPage(tk.Frame):
             button = ttk.Button(self,
                       text=title,
                       command=partial(self.update_graph,
-                      self.context.line,
-                      self.context.fig,
                       self.get_array(self.context.file_data,_column),
                       title)
                       )
@@ -551,12 +549,10 @@ class GraphPage(tk.Frame):
         #pylint: enable-msg=invalid-name
 
     #pylint: disable=too-many-arguments
-    def update_graph(self, lines, figure, data_array, _use_cols_titles, x_data=None, xlab=None, ylab=None, xrange=None, yrange=None):
+    def update_graph(self, y_data, _use_cols_titles, x_data=None, xlab=None, ylab=None, xrange=None, yrange=None):
         """!Update bottem graph with new array
         @param  self                The object pointer
-        @param  lines               Lines to edit
-        @param  figure              2nd graph's figure
-        @param  data_array          Data to change graph's Y values to
+        @param  y_data              Data to change graph's Y values to
         @param  _use_cols_titles    The legend to apply
         @param  x_data              [optional]  Data to change graph's X values to
         @param  xlab                [optional]  String to set X lable to
@@ -566,15 +562,14 @@ class GraphPage(tk.Frame):
         @param  yrange              [optional]  Touple of lower and upper bounds
         for y range (Currently not implemented)
         """
-        y_data = data_array
 
-        #x_data, y_data, xlab, ylab = fourier(data_array)
+        #x_data, y_data, xlab, ylab = fourier(y_data)
 
-        lines[0].set_ydata(y_data)
+        self.context.line[0].set_ydata(y_data)
         if x_data is not None:
-            lines[0].set_xdata(x_data)
-        axes = figure.get_axes()
-        axes[1].legend((lines[0],),
+            self.context.line[0].set_xdata(x_data)
+        axes = self.context.fig.get_axes()
+        axes[1].legend((self.context.line[0],),
                        (_use_cols_titles,),
                        loc=1,
                        bbox_to_anchor=(1.085,1))
@@ -586,8 +581,8 @@ class GraphPage(tk.Frame):
         axes[1].autoscale(enable=True,
                           axis='both',
                           tight=True)
-        figure.canvas.draw()
-        figure.canvas.flush_events()
+        self.context.fig.canvas.draw()
+        self.context.fig.canvas.flush_events()
     #pylint: enable-msg=too-many-arguments
 
 
