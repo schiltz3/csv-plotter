@@ -69,6 +69,9 @@ class PlotterData:
 
     select_columns_widgets:     list = field(default_factory=list)
 
+    ## The current column being plotted
+    current_plot:    np.ndarray = field(init=False)
+
     def var_states(self):
         """!
         Prints the state of the checkbox variables
@@ -419,6 +422,8 @@ class GraphPage(tk.Frame):
 
         self.handler = handler
 
+        self.transformation = Transformations(context)
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
@@ -543,6 +548,12 @@ class GraphPage(tk.Frame):
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
 
+    def create_transformation_menu(self):
+        print("HI")
+
+    def apply_transformation(self, transformation, array, **kwargs):
+        self.context.current_plot = array
+        self.update_graph(**self.transformation.call_transform(transformation,**kwargs))
 
     def update_graph(self, **kwargs):
         """!Update bottem graph with new array
@@ -600,9 +611,12 @@ class Transformations:
     """!
     Class that handles transforms for GraphPage
     """
-    def __init__(self, data_class):
-        self.context = data_class
+    def __init__(self, context):
+        self.context = context
         self.transforms = {str:Callable}
+        self.register_transform("None", self.none)
+        self.register_transform("Fourier", self.fourier)
+        
 
     def call_transform(self,transform_id, **kwargs):
         """!
@@ -610,8 +624,8 @@ class Transformations:
         @param  transform_id    The key for the function in the transforms dictionary
         @param  kwargs          The keyword args passed to the function
         """
-        print(f"Event ID: {transform_id}")
-        self.transforms.get(transform_id)(**kwargs)
+        print(f"Transformation ID: {transform_id}")
+        return self.transforms.get(transform_id)(**kwargs)
 
     def register_transform(self, transform_id, function):
         """!
@@ -632,14 +646,23 @@ class Transformations:
         """
         return self.transforms.keys()
 
-def fourier(signal):
-    """Performs a fourier transformation on the 1D array"""
-    fourier_data = np.fft.fft(signal)
-    number_of_elements = len(signal)
-    timestep = float(0.01)
-    freq = np.fft.fftfreq(number_of_elements, d=timestep)
-    return freq, fourier_data, "frequency", "fourier"
+    def fourier(self, **kwargs):
+        """Performs a fourier transformation on the 1D array"""
+        _return = kwargs
+        _return["y_data"] = np.fft.fft(self.context.current_plot)
+        number_of_elements = len(self.context.current_plot)
+        timestep = float(0.01)
+        _return["x_data"]=np.fft.fftfreq(number_of_elements, d=timestep)
+        _return["y_lab"] = "Fourier"
+        _return["x_lab"] = "Frequency"
+        _return["legend"] += "  Fourier"
+        return _return
 
+    def none(self, **kwargs):
+        """Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
+        _return = kwargs
+        _return["y_data"] = self.context.current_plot
+        return _return
 # Named tuple to store name and function reference in
 
 
@@ -651,8 +674,3 @@ app.eval('tk::PlaceWindow . center')
 app.protocol("WM_DELETE_WINDOW",app.quit)
 app.mainloop()
 app.destroy()
-
-
-
-
-
