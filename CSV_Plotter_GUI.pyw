@@ -537,14 +537,21 @@ class GraphPage(tk.Frame):
         @link   widget_list                 @endlink
         """
 
-        _column = 0
         for _column, title in enumerate(self.context.use_cols_titles):
+#            button = ttk.Button(self,
+#                    text=title,
+#                    command=partial(self.handler.trigger_event,
+#                      "UpdateGraph",
+#                      y_data=self.get_array(self.context.file_data,_column),
+#                      legend=title))
+
             button = ttk.Button(self,
                     text=title,
-                    command=partial(self.handler.trigger_event,
-                      "UpdateGraph",
-                      y_data=self.get_array(self.context.file_data,_column),
-                      legend=title))
+                    command=partial(self.apply_transformation,
+                        "None",
+                        self.get_array(self.context.file_data,_column),
+                        legend=title))
+
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
 
