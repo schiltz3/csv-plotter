@@ -662,13 +662,18 @@ class Transformations:
         _return["x_data"]=np.fft.fftfreq(number_of_elements, d=timestep)
         _return["y_lab"] = "Fourier"
         _return["x_lab"] = "Frequency"
-        _return["legend"] += "  Fourier"
+        _return["legend"] = self.context.current_legend + "  Fourier"
         return _return
 
     def none(self, **kwargs):
         """Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
         _return = kwargs
         _return["y_data"] = self.context.current_plot
+        _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
+        _return["legend"] = self.context.current_legend
+        _return["x_lab"] = "1/10 Second"
+        _return["y_lab"] = "Magnetic field [LSB]"
+
         return _return
 # Named tuple to store name and function reference in
 
