@@ -601,14 +601,17 @@ class GraphPage(tk.Frame):
 
         # Update X and Y data
         if "x_data" in kwargs:
+            print(f"x_data: {kwargs.get('x_data')}")
             self.context.line[0].set_xdata(kwargs.pop("x_data"))
         if "y_data"  in kwargs:
+            print(f"y_data: {kwargs.get('y_data')}")
             self.context.line[0].set_ydata(kwargs.pop("y_data"))
 
         axis = self.context.fig.get_axes()[1]
 
         # Update legend
         if "legend" in kwargs:
+            print(f"legend: {kwargs.get('legend')}")
             axis.legend((self.context.line[0],),
                            (kwargs.pop("legend"),),
                            loc=1,
@@ -616,8 +619,10 @@ class GraphPage(tk.Frame):
 
         # X and Y labels
         if "x_lab" in kwargs:
+            print(f"x_lab: {kwargs.get('x_lab')}")
             axis.set_xlabel(kwargs.pop("x_lab"))
         if "y_lab" in kwargs:
+            print(f"y_lab: {kwargs.get('y_lab')}")
             axis.set_ylabel(kwargs.pop("y_lab"))
 
         # Axis scalling
@@ -625,9 +630,11 @@ class GraphPage(tk.Frame):
         #axis.margins()
         axis.autoscale(enable=True,axis='both',tight=True)
         if "x_range" in kwargs:
-            axis.set_autoscalex_on(False)
+            print(f"x_range: {kwargs.get('x_range')}")
+            axis.set_autoscalex_on()
             axis.set_xscale = kwargs.pop("x_range")
         if "y_range" in kwargs:
+            print(f"y_range: {kwargs.get('y_range')}")
             axis.set_autoscaley_on(False)
             axis.set_yscale = kwargs.pop("y_range")
 
