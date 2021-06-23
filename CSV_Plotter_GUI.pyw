@@ -459,7 +459,10 @@ class GraphPage(tk.Frame):
                 self.context.use_cols_titles,
                 self.get_array(self.context.file_data, -1),
                 self.context.use_cols_titles[-1])
+
+        self.context.current_plot = self.get_array(self.context.file_data, -1)
         self.update_graph_menu()
+        self.create_transformation_menu()
 
         self.controller.eval('tk::PlaceWindow . center')
 
@@ -639,10 +642,9 @@ class Transformations:
     """
     def __init__(self, context):
         self.context = context
-        self.transforms = {str:Callable}
-        self.register_transform("None", self.none)
+        self.transforms = {}
         self.register_transform("Fourier", self.fourier)
-        
+        self.register_transform("None", self.none)
 
     def call_transform(self,transform_id, **kwargs):
         """!
@@ -670,6 +672,7 @@ class Transformations:
         returns a list of of transforms keys
         @return self.transforms keys
         """
+        #print(f"Transform Keys: {self.transforms.keys()}")
         return self.transforms.keys()
 
     def fourier(self, **kwargs):
