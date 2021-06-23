@@ -543,6 +543,7 @@ class GraphPage(tk.Frame):
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
 
+
     def update_graph(self, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
@@ -559,31 +560,39 @@ class GraphPage(tk.Frame):
 
         #x_data, y_data, xlab, ylab = fourier(y_data)
 
-        if kwargs.get("x_data"):
-            self.context.line[0].set_xdata(kwargs.get("x_data"))
+        # Update X and Y data
+        if "x_data" in kwargs:
+            self.context.line[0].set_xdata(kwargs.pop("x_data"))
+        if "y_data"  in kwargs:
+            self.context.line[0].set_ydata(kwargs.pop("y_data"))
 
-        self.context.line[0].set_ydata(kwargs.get("y_data"))
         axis = self.context.fig.get_axes()[1]
-        axis.legend((self.context.line[0],),
-                       (kwargs.get("legend"),),
-                       loc=1,
-                       bbox_to_anchor=(1.085,1))
 
+        # Update legend
+        if "legend" in kwargs:
+            axis.legend((self.context.line[0],),
+                           (kwargs.pop("legend"),),
+                           loc=1,
+                           bbox_to_anchor=(1.085,1))
+
+        # X and Y labels
         if "x_lab" in kwargs:
-            axis.set_xlabel(kwargs.get("x_lab"))
+            axis.set_xlabel(kwargs.pop("x_lab"))
         if "y_lab" in kwargs:
-            axis.set_ylabel(kwargs.get("y_lab"))
+            axis.set_ylabel(kwargs.pop("y_lab"))
 
+        # Axis scalling
         axis.relim()
-        axis.margins()
+        #axis.margins()
         axis.autoscale(enable=True,axis='both',tight=True)
         if "x_range" in kwargs:
             axis.set_autoscalex_on(False)
-            axis.set_xscale = kwargs["x_range"]
+            axis.set_xscale = kwargs.pop("x_range")
         if "y_range" in kwargs:
             axis.set_autoscaley_on(False)
-            axis.set_yscale = kwargs["y_range"]
+            axis.set_yscale = kwargs.pop("y_range")
 
+        # Force update
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
 
