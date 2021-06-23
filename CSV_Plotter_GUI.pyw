@@ -8,6 +8,7 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 import os
 import csv
 import types
+from typing import Callable
 from functools import partial
 
 import tkinter as tk
@@ -104,6 +105,44 @@ class PlotterData:
                 if file_handle.line_num == self.title_row_num :
                     self.title_row = row
 
+class PlotterEvents:
+    """!
+    Class that handles events for csv_plotter_gui
+    """
+    def __init__(self, data_class):
+        self.context = data_class
+        self.events = {str:Callable}
+
+    def trigger_event(self, event_id, **kwargs):
+        """!
+        Runs function specified by event_id with args
+        @param  event_id    The key for the function in the events dictionary
+        @param  kwargs        The keyword arguments passed to the function
+        """
+        print(f"Event ID: {event_id}")
+        self.events.get(event_id)(**kwargs)
+
+    def register_event(self, event_id, function):
+        """!
+        registers a function to a hook
+        @param  parent      The parent class of the function
+        @param  event_id    The String of one of the handles in self.events
+        @param  function    The function pointer
+        @return returns the preevious event list if one existed
+        """
+        _return = self.events.get(event_id)
+        self.events[event_id] = function
+        return _return
+
+    def get_list_of_events(self):
+        """!
+        returns a dictionary of events
+        @return self.events
+        """
+        return self.events
+
+
+
 class CsvPlotter(tk.Tk):
     """!
     Parent class for application
@@ -126,11 +165,14 @@ class CsvPlotter(tk.Tk):
         context = PlotterData()
         self.context = context
 
+        events = PlotterEvents(context)
+        #events = context
+
         ## Stores the frames that make up the app pages
         # @var frames
 
         for F in (GraphPage, SelectColumns):
-            frame = F(container, self, context)
+            frame = F(container, self, context, events)
             context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
@@ -152,7 +194,7 @@ class SelectColumns(tk.Frame):
     Tk Frame that displays the data selection screen
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller, context):
+    def __init__(self, parent, controller, context, handler):
 
         tk.Frame.__init__(self, parent)
 
@@ -168,6 +210,8 @@ class SelectColumns(tk.Frame):
         ## Object pointer to @link PlotterData @endlink
         # @var context
         self.context = context
+
+        self.handler = handler
 
         ## Page Title widget handle
         # @var title_label
@@ -205,7 +249,8 @@ class SelectColumns(tk.Frame):
         @link   self.context.filename       filename        @endlink \n
         @link   SelectColumns.widget_list   widget_list     @endlink
         """
-        self.context.filename = askopenfilename(parent = self.controller, filetypes=[("CSV","*.csv")])
+        self.context.filename = askopenfilename(parent = self.controller,
+                                                filetypes=[("CSV","*.csv")])
         print(f"Context filename: {self.context.filename}")
 
         if self.context.filename != '':
@@ -325,7 +370,8 @@ class SelectColumns(tk.Frame):
         """
         # Get columns and column Titles selected in the checkbox menu from doc
         self.get_column_titles()
-        print(f"Main use_cols_titles: {self.context.use_cols_titles}")
+        print(f"use_cols_titles: {self.context.use_cols_titles}")
+        print(f"use_cols: {self.context.use_cols}")
 
 
         # Open file and create 2D array from data
@@ -338,6 +384,7 @@ class SelectColumns(tk.Frame):
                                   filling_values=0)
         #print(np.info(dataArray))
         print(self.context.file_data)
+        self.handler.trigger_event("Graph")
         self.controller.show_frame(GraphPage)
 
 
@@ -346,7 +393,7 @@ class GraphPage(tk.Frame):
     Tk Frame that handles graphing selected data
     @extends  tk.Frame
     """
-    def __init__(self, parent, controller, context):
+    def __init__(self, parent, controller, context, handler):
         tk.Frame.__init__(self, parent)
 
         label = tk.Label(self,
@@ -357,9 +404,6 @@ class GraphPage(tk.Frame):
         button1 = ttk.Button(self,text="Select Columns",
                              command=lambda:controller.show_frame(SelectColumns))
         button1.pack()
-        button = ttk.Button(self, text="Update Graph",
-                            command=self.main)
-        button.pack()
 
         ## Object pointer to @link  CsvPlotter  controller  @endlink
         # @var controller
@@ -373,9 +417,14 @@ class GraphPage(tk.Frame):
         # @var context
         self.context = context
 
+        self.handler = handler
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
+
+        handler.register_event("Graph", self.main)
+        handler.register_event("UpdateGraph", self.update_graph)
 
     def main(self):
         """!
@@ -393,8 +442,8 @@ class GraphPage(tk.Frame):
         @link   update_graph_menu                           @endlink
         """
         print ("Graph Main:")
-        print (f"file_data:\n{self.context.file_data}")
-        print (f"use_cols_titles: {self.context.use_cols_titles}")
+        #print (f"file_data:\n{self.context.file_data}")
+        #print (f"use_cols_titles: {self.context.use_cols_titles}")
 
         for widget in self.widget_list:
             widget.destroy()
@@ -483,60 +532,60 @@ class GraphPage(tk.Frame):
         @link   widget_list                 @endlink
         """
 
-        #pylint: disable=invalid-name
         _column = 0
         for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
-                      text=title,
-                      command=partial(self.update_graph,
-                      self.context.line,
-                      self.context.fig,
-                      self.get_array(self.context.file_data,_column),
-                      title)
-                      )
+                    text=title,
+                    command=partial(self.handler.trigger_event,
+                      "UpdateGraph",
+                      y_data=self.get_array(self.context.file_data,_column),
+                      legend=title))
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
-        #pylint: enable-msg=invalid-name
 
-    #pylint: disable=too-many-arguments
-    def update_graph(self, lines, figure, data_array, _use_cols_titles, x_data=None, xlab=None, ylab=None, xrange=None, yrange=None):
+    def update_graph(self, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
-        @param  lines               Lines to edit
-        @param  figure              2nd graph's figure
-        @param  data_array          Data to change graph's Y values to
+        @param  y_data              Array to change graph's Y values to
         @param  _use_cols_titles    The legend to apply
         @param  x_data              [optional]  Data to change graph's X values to
-        @param  xlab                [optional]  String to set X lable to
-        @param  ylab                [optional]  String to set Y lable to
-        @param  xrange              [optional]  Touple of lower and upper bounds
+        @param  x_lab               [optional]  String to set X lable to
+        @param  y_lab               [optional]  String to set Y lable to
+        @param  x_range             [optional]  Touple of lower and upper bounds
         for x range (Currently not implemented)
-        @param  yrange              [optional]  Touple of lower and upper bounds
+        @param  y_range             [optional]  Touple of lower and upper bounds
         for y range (Currently not implemented)
         """
-        y_data = data_array
 
-        #x_data, y_data, xlab, ylab = fourier(data_array)
+        #x_data, y_data, xlab, ylab = fourier(y_data)
 
-        lines[0].set_ydata(y_data)
-        if x_data is not None:
-            lines[0].set_xdata(x_data)
-        axes = figure.get_axes()
-        axes[1].legend((lines[0],),
-                       (_use_cols_titles,),
+        if kwargs.get("x_data"):
+            self.context.line[0].set_xdata(kwargs.get("x_data"))
+
+        self.context.line[0].set_ydata(kwargs.get("y_data"))
+        axis = self.context.fig.get_axes()[1]
+        axis.legend((self.context.line[0],),
+                       (kwargs.get("legend"),),
                        loc=1,
                        bbox_to_anchor=(1.085,1))
-        if xlab is not None:
-            axes[1].set_xlabel(xlab)
-        if ylab is not None:
-            axes[1].set_ylabel(ylab)
-        axes[1].relim()
-        axes[1].autoscale(enable=True,
-                          axis='both',
-                          tight=True)
-        figure.canvas.draw()
-        figure.canvas.flush_events()
-    #pylint: enable-msg=too-many-arguments
+
+        if "x_lab" in kwargs:
+            axis.set_xlabel(kwargs.get("x_lab"))
+        if "y_lab" in kwargs:
+            axis.set_ylabel(kwargs.get("y_lab"))
+
+        axis.relim()
+        axis.margins()
+        axis.autoscale(enable=True,axis='both',tight=True)
+        if "x_range" in kwargs:
+            axis.set_autoscalex_on(False)
+            axis.set_xscale = kwargs["x_range"]
+        if "y_range" in kwargs:
+            axis.set_autoscaley_on(False)
+            axis.set_yscale = kwargs["y_range"]
+
+        self.context.fig.canvas.draw()
+        self.context.fig.canvas.flush_events()
 
 
 
