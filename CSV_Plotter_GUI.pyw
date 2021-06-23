@@ -643,6 +643,7 @@ class Transformations:
     def __init__(self, context):
         self.context = context
         self.transforms = {}
+        self.register_transform("ZeroCrossings", self.frequency)
         self.register_transform("Fourier", self.fourier)
         self.register_transform("None", self.none)
 
@@ -684,7 +685,7 @@ class Transformations:
         _return["x_data"] = np.fft.fftfreq(number_of_elements, d=timestep)
         _return["y_lab"] = "Fourier"
         _return["x_lab"] = "Frequency"
-        _return["legend"] = self.context.current_legend + "  Fourier"
+        _return["legend"] = self.context.current_legend + " Fourier"
         return _return
 
     def none(self, **kwargs):
@@ -695,8 +696,35 @@ class Transformations:
         _return["legend"] = self.context.current_legend
         _return["x_lab"] = "1/10 Second"
         _return["y_lab"] = "Magnetic field [LSB]"
-
         return _return
+
+    def frequency(self, **kwargs):
+        """Calculates the zero crossings and sets a boolean"""
+        samples = 100
+        _return = kwargs
+        _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
+        frequency = np.empty_like(self.context.current_plot)
+        print("Frequency array:")
+        print(np.info(frequency))
+        history = np.zeros(samples, np.int16)
+        for i, value in enumerate(self.context.current_plot):
+            pos = False
+            crossings = 0
+            history[i%samples] = value
+            for element in history:
+                if element >= 0 and pos is False:
+                    crossings += 1
+                if element < 0 and pos is True:
+                    crossings += 1
+
+            frequency[i] = crossings
+
+        _return["y_data"] = frequency
+        _return["x_lab"] = "1/10 Second"
+        _return["y_lab"] = "Zero Crossings"
+        _return["legend"] = self.context.current_legend + " Zero Crossings"
+        return _return
+
 # Named tuple to store name and function reference in
 
 
