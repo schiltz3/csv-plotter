@@ -69,6 +69,11 @@ class PlotterData:
 
     select_columns_widgets:     list = field(default_factory=list)
 
+    ## The current column being plotted
+    current_plot:    np.ndarray = field(init=False)
+    current_legend:  str = field(default="")
+    current_transformation:  str = field(default="None")
+
     def var_states(self):
         """!
         Prints the state of the checkbox variables
@@ -419,6 +424,8 @@ class GraphPage(tk.Frame):
 
         self.handler = handler
 
+        self.transformation = Transformations(context)
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
@@ -452,7 +459,10 @@ class GraphPage(tk.Frame):
                 self.context.use_cols_titles,
                 self.get_array(self.context.file_data, -1),
                 self.context.use_cols_titles[-1])
+
+        self.context.current_plot = self.get_array(self.context.file_data, -1)
         self.update_graph_menu()
+        self.create_transformation_menu()
 
         self.controller.eval('tk::PlaceWindow . center')
 
@@ -532,16 +542,39 @@ class GraphPage(tk.Frame):
         @link   widget_list                 @endlink
         """
 
-        _column = 0
         for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
                     text=title,
-                    command=partial(self.handler.trigger_event,
-                      "UpdateGraph",
-                      y_data=self.get_array(self.context.file_data,_column),
-                      legend=title))
+                    command=partial(self.change_array,
+                        self.get_array(self.context.file_data,_column),
+                        title))
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
+
+    def create_transformation_menu(self):
+        for trans in self.transformation.get_list_of_transformations():
+            print(trans)
+            button = ttk.Button(self,
+                    text=str(trans),
+                    command=partial(self.change_transformation,
+                        trans))
+
+            button.pack(side=tk.RIGHT,pady=4)
+            self.widget_list.append(button)
+
+    def change_array(self, array, legend, **kwargs):
+        """Set the current plot and current legend then update the graph
+        using the current transformation"""
+        self.context.current_plot = array
+        self.context.current_legend = legend
+        print(legend)
+        self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
+
+    def change_transformation(self, transformation, **kwargs):
+        """Set the transformation then update the graph using the current
+        plot and legend"""
+        self.context.current_transformation = transformation
+        self.update_graph(**self.transformation.call_transform(transformation,**kwargs))
 
 
     def update_graph(self, **kwargs):
@@ -562,14 +595,17 @@ class GraphPage(tk.Frame):
 
         # Update X and Y data
         if "x_data" in kwargs:
+            print(f"x_data: {kwargs.get('x_data')}")
             self.context.line[0].set_xdata(kwargs.pop("x_data"))
         if "y_data"  in kwargs:
+            print(f"y_data: {kwargs.get('y_data')}")
             self.context.line[0].set_ydata(kwargs.pop("y_data"))
 
         axis = self.context.fig.get_axes()[1]
 
         # Update legend
         if "legend" in kwargs:
+            print(f"legend: {kwargs.get('legend')}")
             axis.legend((self.context.line[0],),
                            (kwargs.pop("legend"),),
                            loc=1,
@@ -577,8 +613,10 @@ class GraphPage(tk.Frame):
 
         # X and Y labels
         if "x_lab" in kwargs:
+            print(f"x_lab: {kwargs.get('x_lab')}")
             axis.set_xlabel(kwargs.pop("x_lab"))
         if "y_lab" in kwargs:
+            print(f"y_lab: {kwargs.get('y_lab')}")
             axis.set_ylabel(kwargs.pop("y_lab"))
 
         # Axis scalling
@@ -586,9 +624,11 @@ class GraphPage(tk.Frame):
         #axis.margins()
         axis.autoscale(enable=True,axis='both',tight=True)
         if "x_range" in kwargs:
-            axis.set_autoscalex_on(False)
+            print(f"x_range: {kwargs.get('x_range')}")
+            axis.set_autoscalex_on()
             axis.set_xscale = kwargs.pop("x_range")
         if "y_range" in kwargs:
+            print(f"y_range: {kwargs.get('y_range')}")
             axis.set_autoscaley_on(False)
             axis.set_yscale = kwargs.pop("y_range")
 
@@ -596,6 +636,68 @@ class GraphPage(tk.Frame):
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
 
+class Transformations:
+    """!
+    Class that handles transforms for GraphPage
+    """
+    def __init__(self, context):
+        self.context = context
+        self.transforms = {}
+        self.register_transform("Fourier", self.fourier)
+        self.register_transform("None", self.none)
+
+    def call_transform(self,transform_id, **kwargs):
+        """!
+        Runs function specified by transform_id with kwargs
+        @param  transform_id    The key for the function in the transforms dictionary
+        @param  kwargs          The keyword args passed to the function
+        """
+        print(f"Transformation ID: {transform_id}")
+        return self.transforms.get(transform_id)(**kwargs)
+
+    def register_transform(self, transform_id, function):
+        """!
+        registers a function to a hook
+        @param  parent          The parent class of the function
+        @param  transform_id    The String of one of the handles in self.transforms
+        @param  function        The function pointer
+        @return returns the previous function if one existed
+        """
+        _return = self.transforms.get(transform_id)
+        self.transforms[transform_id] = function
+        return _return
+
+    def get_list_of_transformations(self):
+        """!
+        returns a list of of transforms keys
+        @return self.transforms keys
+        """
+        #print(f"Transform Keys: {self.transforms.keys()}")
+        return self.transforms.keys()
+
+    def fourier(self, **kwargs):
+        """Performs a fourier transformation on the 1D array"""
+        _return = kwargs
+        _return["y_data"] = np.fft.fft(self.context.current_plot)
+        number_of_elements = len(self.context.current_plot)
+        timestep = float(0.01)
+        _return["x_data"]=np.fft.fftfreq(number_of_elements, d=timestep)
+        _return["y_lab"] = "Fourier"
+        _return["x_lab"] = "Frequency"
+        _return["legend"] = self.context.current_legend + "  Fourier"
+        return _return
+
+    def none(self, **kwargs):
+        """Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
+        _return = kwargs
+        _return["y_data"] = self.context.current_plot
+        _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
+        _return["legend"] = self.context.current_legend
+        _return["x_lab"] = "1/10 Second"
+        _return["y_lab"] = "Magnetic field [LSB]"
+
+        return _return
+# Named tuple to store name and function reference in
 
 
 app = CsvPlotter()
@@ -606,25 +708,3 @@ app.eval('tk::PlaceWindow . center')
 app.protocol("WM_DELETE_WINDOW",app.quit)
 app.mainloop()
 app.destroy()
-
-
-
-
-def fourier(signal):
-    """Performs a fourier transformation on the 1D array"""
-    fourier_data = np.fft.fft(signal)
-    number_of_elements = len(signal)
-    timestep = float(0.01)
-    freq = np.fft.fftfreq(number_of_elements, d=timestep)
-    return freq, fourier_data, "frequency", "fourier"
-
-# Named tuple to store name and function reference in
-
-@dataclass
-class Transformation:
-    """Class for storing transformation name and function pointer"""
-    name: str
-    function: types.FunctionType
-
-#transformations.append(trans("Fourier",fourier))
-
