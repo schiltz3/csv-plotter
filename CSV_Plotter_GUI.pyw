@@ -558,11 +558,30 @@ class GraphPage(tk.Frame):
             self.widget_list.append(button)
 
     def create_transformation_menu(self):
-        print("HI")
+        for trans in self.transformation.get_list_of_transformations():
+            print(trans)
+            button = ttk.Button(self,
+                    text=str(trans),
+                    command=partial(self.change_transformation,
+                        trans))
 
-    def apply_transformation(self, transformation, array, **kwargs):
+            button.pack(side=tk.RIGHT,pady=4)
+            self.widget_list.append(button)
+
+    def change_array(self, array, legend, **kwargs):
+        """Set the current plot and current legend then update the graph
+        using the current transformation"""
         self.context.current_plot = array
+        self.context.current_legend = legend
+        print(legend)
+        self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
+
+    def change_transformation(self, transformation, **kwargs):
+        """Set the transformation then update the graph using the current
+        plot and legend"""
+        self.context.current_transformation = transformation
         self.update_graph(**self.transformation.call_transform(transformation,**kwargs))
+
 
     def update_graph(self, **kwargs):
         """!Update bottem graph with new array
