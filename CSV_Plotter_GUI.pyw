@@ -136,10 +136,10 @@ class PlotterEvents:
 
     def get_list_of_events(self):
         """!
-        returns a dictionary of events
-        @return self.events
+        returns a dictionary of event keys
+        @return self.events keys
         """
-        return self.events
+        return self.events.keys()
 
 
 
