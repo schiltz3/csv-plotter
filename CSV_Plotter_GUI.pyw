@@ -282,11 +282,11 @@ class SelectColumns(tk.Frame):
             self.main()
         elif self.spam is False:
             print("Select at least one Box")
-            lable = ttk.Label(self,
+            label = ttk.Label(self,
                              text="Select at least one Box",
                              font=('bold'))
-            lable.pack()
-            self.context.select_columns_widgets.append(lable)
+            label.pack()
+            self.context.select_columns_widgets.append(label)
             self.spam = True
 
     def create_checkboxes(self):
@@ -549,8 +549,8 @@ class GraphPage(tk.Frame):
         @param  y_data              Array to change graph's Y values to
         @param  _use_cols_titles    The legend to apply
         @param  x_data              [optional]  Data to change graph's X values to
-        @param  x_lab               [optional]  String to set X lable to
-        @param  y_lab               [optional]  String to set Y lable to
+        @param  x_lab               [optional]  String to set X label to
+        @param  y_lab               [optional]  String to set Y label to
         @param  x_range             [optional]  Touple of lower and upper bounds
         for x range (Currently not implemented)
         @param  y_range             [optional]  Touple of lower and upper bounds
