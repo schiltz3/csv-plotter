@@ -71,6 +71,8 @@ class PlotterData:
 
     ## The current column being plotted
     current_plot:    np.ndarray = field(init=False)
+    current_legend:  str = field(default="")
+    current_transformation:  str = field(default="None")
 
     def var_states(self):
         """!
