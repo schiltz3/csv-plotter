@@ -589,28 +589,28 @@ class GraphPage(tk.Frame):
 
 class Transformations:
     """!
-    Class that handles events for csv_plotter_gui
+    Class that handles transforms for GraphPage
     """
     def __init__(self, data_class):
         self.context = data_class
         self.transforms = {str:Callable}
 
-    def call_transform(self,event_id, **kwargs):
+    def call_transform(self,transform_id, **kwargs):
         """!
-        Runs function specified by event_id with args
-        @param  event_id    The key for the function in the events dictionary
-        @param  args        The args passed to the function
+        Runs function specified by transform_id with kwargs
+        @param  transform_id    The key for the function in the transforms dictionary
+        @param  kwargs          The keyword args passed to the function
         """
-        print(f"Event ID: {event_id}")
-        function = self.transforms.get(event_id)(**kwargs)
+        print(f"Event ID: {transform_id}")
+        self.transforms.get(transform_id)(**kwargs)
 
     def register_transform(self, transform_id, function):
         """!
         registers a function to a hook
-        @param  parent      The parent class of the function
-        @param  event_id    The String of one of the handles in self.events
-        @param  function    The function pointer
-        @return returns the preevious event list if one existed
+        @param  parent          The parent class of the function
+        @param  transform_id    The String of one of the handles in self.transforms
+        @param  function        The function pointer
+        @return returns the previous function if one existed
         """
         _return = self.transforms.get(transform_id)
         self.transforms[transform_id] = function
@@ -618,10 +618,11 @@ class Transformations:
 
     def get_list_of_transformations(self):
         """!
-        returns a dictionary of events
-        @return self.events
+        returns a list of of transforms keys
+        @return self.transforms keys
         """
-        return self.transforms
+        return self.transforms.keys()
+
 def fourier(signal):
     """Performs a fourier transformation on the 1D array"""
     fourier_data = np.fft.fft(signal)
