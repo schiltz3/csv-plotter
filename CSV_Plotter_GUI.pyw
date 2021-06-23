@@ -540,20 +540,11 @@ class GraphPage(tk.Frame):
         """
 
         for _column, title in enumerate(self.context.use_cols_titles):
-#            button = ttk.Button(self,
-#                    text=title,
-#                    command=partial(self.handler.trigger_event,
-#                      "UpdateGraph",
-#                      y_data=self.get_array(self.context.file_data,_column),
-#                      legend=title))
-
             button = ttk.Button(self,
                     text=title,
-                    command=partial(self.apply_transformation,
-                        "None",
+                    command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
-                        legend=title))
-
+                        title))
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
 
