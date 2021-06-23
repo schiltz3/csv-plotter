@@ -113,18 +113,14 @@ class PlotterEvents:
         self.context = data_class
         self.events = {str:Callable}
 
-    def trigger_event(self,event_id, *args):
+    def trigger_event(self, event_id, **kwargs):
         """!
         Runs function specified by event_id with args
         @param  event_id    The key for the function in the events dictionary
-        @param  args        The args passed to the function
+        @param  kwargs        The keyword arguments passed to the function
         """
         print(f"Event ID: {event_id}")
-        function = self.events.get(event_id)
-        if len(args) > 0:
-            function(args)
-        else:
-            function()
+        self.events.get(event_id)(**kwargs)
 
     def register_event(self, event_id, function):
         """!
@@ -136,8 +132,7 @@ class PlotterEvents:
         """
         _return = self.events.get(event_id)
         self.events[event_id] = function
-        if _return:
-            return _return
+        return _return
 
     def get_list_of_events(self):
         """!
@@ -422,6 +417,8 @@ class GraphPage(tk.Frame):
         # @var context
         self.context = context
 
+        self.handler = handler
+
         ## List of widgets in frame
         # @var widget_list
         self.widget_list = []
@@ -538,15 +535,15 @@ class GraphPage(tk.Frame):
         _column = 0
         for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(self,
-                      text=title,
-                      command=partial(self.update_graph,
-                      self.get_array(self.context.file_data,_column),
-                      title)
-                      )
+                    text=title,
+                    command=partial(self.handler.trigger_event,
+                      "UpdateGraph",
+                      y_data=self.get_array(self.context.file_data,_column),
+                      legend=title))
             button.pack(side=tk.LEFT,pady=4)
             self.widget_list.append(button)
 
-    def update_graph(self, y_data, legend, **kwargs):
+    def update_graph(self, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
         @param  y_data              Array to change graph's Y values to
@@ -565,10 +562,10 @@ class GraphPage(tk.Frame):
         if kwargs.get("x_data"):
             self.context.line[0].set_xdata(kwargs.get("x_data"))
 
-        self.context.line[0].set_ydata(y_data)
+        self.context.line[0].set_ydata(kwargs.get("y_data"))
         axis = self.context.fig.get_axes()[1]
         axis.legend((self.context.line[0],),
-                       (legend,),
+                       (kwargs.get("legend"),),
                        loc=1,
                        bbox_to_anchor=(1.085,1))
 
@@ -579,15 +576,13 @@ class GraphPage(tk.Frame):
 
         axis.relim()
         axis.margins()
-        axis.set_autoscale_on(False)
+        axis.autoscale(enable=True,axis='both',tight=True)
         if "x_range" in kwargs:
+            axis.set_autoscalex_on(False)
             axis.set_xscale = kwargs["x_range"]
-            axis.set_autoscalex_on(True)
         if "y_range" in kwargs:
+            axis.set_autoscaley_on(False)
             axis.set_yscale = kwargs["y_range"]
-            axis.set_autoscaley_on(True)
-        if "y_range" not in kwargs and "x_range" not in kwargs:
-            axis.autoscale(enable=True,axis='both',tight=True)
 
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
