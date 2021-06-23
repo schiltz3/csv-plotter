@@ -587,6 +587,50 @@ class GraphPage(tk.Frame):
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
 
+class Transformations:
+    """!
+    Class that handles events for csv_plotter_gui
+    """
+    def __init__(self, data_class):
+        self.context = data_class
+        self.transforms = {str:Callable}
+
+    def call_transform(self,event_id, **kwargs):
+        """!
+        Runs function specified by event_id with args
+        @param  event_id    The key for the function in the events dictionary
+        @param  args        The args passed to the function
+        """
+        print(f"Event ID: {event_id}")
+        function = self.transforms.get(event_id)(**kwargs)
+
+    def register_transform(self, transform_id, function):
+        """!
+        registers a function to a hook
+        @param  parent      The parent class of the function
+        @param  event_id    The String of one of the handles in self.events
+        @param  function    The function pointer
+        @return returns the preevious event list if one existed
+        """
+        _return = self.transforms.get(transform_id)
+        self.transforms[transform_id] = function
+        return _return
+
+    def get_list_of_transformations(self):
+        """!
+        returns a dictionary of events
+        @return self.events
+        """
+        return self.transforms
+def fourier(signal):
+    """Performs a fourier transformation on the 1D array"""
+    fourier_data = np.fft.fft(signal)
+    number_of_elements = len(signal)
+    timestep = float(0.01)
+    freq = np.fft.fftfreq(number_of_elements, d=timestep)
+    return freq, fourier_data, "frequency", "fourier"
+
+# Named tuple to store name and function reference in
 
 
 app = CsvPlotter()
@@ -601,21 +645,4 @@ app.destroy()
 
 
 
-def fourier(signal):
-    """Performs a fourier transformation on the 1D array"""
-    fourier_data = np.fft.fft(signal)
-    number_of_elements = len(signal)
-    timestep = float(0.01)
-    freq = np.fft.fftfreq(number_of_elements, d=timestep)
-    return freq, fourier_data, "frequency", "fourier"
-
-# Named tuple to store name and function reference in
-
-@dataclass
-class Transformation:
-    """Class for storing transformation name and function pointer"""
-    name: str
-    function: types.FunctionType
-
-#transformations.append(trans("Fourier",fourier))
 
