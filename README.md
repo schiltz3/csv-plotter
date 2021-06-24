@@ -10,6 +10,10 @@ csv must be in specific format to use with this reader
 
 ## Instalation
 Install python libraries using pip and the requirements.txt file
-```pip install -r requirements.txt```
+```javascript
+pip install -r requirements.txt
+```
 Install the tk C++ library Python3 tk
-```sudo apt-get install python3-tk```
+```javascript
+sudo apt-get install python3-tk
+```
