@@ -683,7 +683,7 @@ class Transformations:
         return self.transforms.keys()
 
     def fourier(self, **kwargs):
-        """Performs a fourier transformation on the 1D array"""
+        """!Performs a fourier transformation on the 1D array"""
         _return = kwargs
         _return["y_data"] = np.fft.fft(self.context.current_plot)
         number_of_elements = len(self.context.current_plot)
@@ -695,7 +695,7 @@ class Transformations:
         return _return
 
     def none(self, **kwargs):
-        """Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
+        """!Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
         _return = kwargs
         _return["y_data"] = self.context.current_plot
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
@@ -705,7 +705,7 @@ class Transformations:
         return _return
 
     def frequency(self, **kwargs):
-        """Calculates the zero crossings and sets a boolean"""
+        """!Calculates the zero crossings and sets a boolean"""
         samples = 10
         _return = kwargs
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
