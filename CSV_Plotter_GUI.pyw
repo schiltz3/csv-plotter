@@ -647,7 +647,9 @@ class Transformations:
     Class that handles transforms for GraphPage
     """
     def __init__(self, context):
+        ## instence of @link DataClass @end
         self.context = context
+        ## Dictionary for Transformation Title : transformation handle
         self.transforms = {}
         self.register_transform("ZeroCrossings", self.frequency)
         self.register_transform("Fourier", self.fourier)
