@@ -710,12 +710,7 @@ class Transformations:
         _return = kwargs
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         frequency = np.empty_like(self.context.current_plot)
-        print("Frequency array:")
-        print(np.info(frequency))
         history = np.full(samples, -0, np.int16)
-        print("History array:")
-        print(np.info(history))
-        print(history)
         pos = False
         for i, value in enumerate(self.context.current_plot):
             crossings = 0
@@ -726,9 +721,9 @@ class Transformations:
                     pos = True
                 if element < 0 and pos is True:
                     crossings += 1
-
+                    pos = False
             frequency[i] = crossings
-            print(history)
+#            print(f"History: {history}\tCrossings: {crossings}")
 
         _return["y_data"] = frequency
         _return["x_lab"] = ".01 Second"
