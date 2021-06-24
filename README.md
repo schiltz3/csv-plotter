@@ -9,11 +9,11 @@ csv must be in specific format to use with this reader
 |data|data|...|
 
 ## Instalation
-Install python libraries using pip and the requirements.txt file
-```javascript
+Install python libraries using pip and the requirements.txt file:
+```bash
 pip install -r requirements.txt
 ```
-Install the tk C++ library Python3 tk
-```javascript
+Install the tk C++ library Python3 tk:
+```bash
 sudo apt-get install python3-tk
 ```
