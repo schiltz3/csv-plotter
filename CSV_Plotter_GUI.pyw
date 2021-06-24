@@ -7,15 +7,14 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 
 import os
 import csv
-import types
+import sys
 from typing import Callable
+from typing import List
 from functools import partial
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
-
-from typing import List
 
 from dataclasses import dataclass
 from dataclasses import field
@@ -154,7 +153,9 @@ class CsvPlotter(tk.Tk):
     """
     ## Constructor
     def __init__(self, *args, **kwargs):
-
+        filename = ""
+        if "filename" in kwargs:
+            filename = str(kwargs.pop("filename"))
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.wm_title(self, "CSV Plotter")
 
@@ -168,11 +169,11 @@ class CsvPlotter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         context = PlotterData()
+        context.filename = filename
         self.context = context
 
         events = PlotterEvents(context)
         #events = context
-
         ## Stores the frames that make up the app pages
         # @var frames
 
@@ -183,6 +184,7 @@ class CsvPlotter(tk.Tk):
                        column=0,
                        sticky="nsew")
 
+        events.trigger_event("SelectFile")
         self.show_frame(SelectColumns)
 
     def show_frame(self, cont):
@@ -235,6 +237,7 @@ class SelectColumns(tk.Frame):
                             command=self.select_file)
         button.pack()
         context.select_columns_widgets.append(button)
+        self.handler.register_event("SelectFile", self.select_file)
 
     def clear_frame(self):
         """!
@@ -254,9 +257,10 @@ class SelectColumns(tk.Frame):
         @link   self.context.filename       filename        @endlink \n
         @link   SelectColumns.widget_list   widget_list     @endlink
         """
-        self.context.filename = askopenfilename(parent = self.controller,
+        if self.context.filename == "":
+            print(f"Context filename: {self.context.filename}")
+            self.context.filename = askopenfilename(parent = self.controller,
                                                 filetypes=[("CSV","*.csv")])
-        print(f"Context filename: {self.context.filename}")
 
         if self.context.filename != '':
             self.clear_frame()
@@ -304,7 +308,7 @@ class SelectColumns(tk.Frame):
         @link   widget_list @endlink
         """
         self.context.check_box = []
-        self.context.title_label['text'] = os.path.basename(self.context.filename)
+        self.context.title_label['text'] = os.path.basename(self.context.filename).split('.')[0]
         for  _title in self.context.title_row:
             check = tk.IntVar()
             button = ttk.Checkbutton(self,
@@ -401,15 +405,6 @@ class GraphPage(tk.Frame):
     def __init__(self, parent, controller, context, handler):
         tk.Frame.__init__(self, parent)
 
-        label = tk.Label(self,
-                         text="Graph Page",
-                         font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
-
-        button1 = ttk.Button(self,text="Select Columns",
-                             command=lambda:controller.show_frame(SelectColumns))
-        button1.pack()
-
         ## Object pointer to @link  CsvPlotter  controller  @endlink
         # @var controller
         self.controller = controller
@@ -425,6 +420,17 @@ class GraphPage(tk.Frame):
         self.handler = handler
 
         self.transformation = Transformations(context)
+        tk.Label(self,
+                 text="Graph Page",
+                 font=LARGE_FONT).pack()
+        self.label2 = tk.Label(self,
+                               text="",
+                               font=LARGE_FONT)
+        self.label2.pack()
+        button1 = ttk.Button(self,text="Select Columns",
+                             command=lambda:controller.show_frame(SelectColumns))
+        button1.pack(pady=10, padx=10)
+
 
         ## List of widgets in frame
         # @var widget_list
@@ -451,7 +457,7 @@ class GraphPage(tk.Frame):
         print ("Graph Main:")
         #print (f"file_data:\n{self.context.file_data}")
         #print (f"use_cols_titles: {self.context.use_cols_titles}")
-
+        self.label2['text'] = os.path.basename(self.context.filename).split('.')[0]
         for widget in self.widget_list:
             widget.destroy()
 
@@ -694,33 +700,38 @@ class Transformations:
         _return["y_data"] = self.context.current_plot
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         _return["legend"] = self.context.current_legend
-        _return["x_lab"] = "1/10 Second"
+        _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Magnetic field [LSB]"
         return _return
 
     def frequency(self, **kwargs):
         """Calculates the zero crossings and sets a boolean"""
-        samples = 100
+        samples = 10
         _return = kwargs
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         frequency = np.empty_like(self.context.current_plot)
         print("Frequency array:")
         print(np.info(frequency))
-        history = np.zeros(samples, np.int16)
+        history = np.full(samples, -0, np.int16)
+        print("History array:")
+        print(np.info(history))
+        print(history)
+        pos = False
         for i, value in enumerate(self.context.current_plot):
-            pos = False
             crossings = 0
             history[i%samples] = value
             for element in history:
-                if element >= 0 and pos is False:
+                if element > 0 and pos is False:
                     crossings += 1
+                    pos = True
                 if element < 0 and pos is True:
                     crossings += 1
 
             frequency[i] = crossings
+            print(history)
 
         _return["y_data"] = frequency
-        _return["x_lab"] = "1/10 Second"
+        _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Zero Crossings"
         _return["legend"] = self.context.current_legend + " Zero Crossings"
         return _return
@@ -728,7 +739,13 @@ class Transformations:
 # Named tuple to store name and function reference in
 
 
-app = CsvPlotter()
+print(f"Arguments: {sys.argv}")
+ARG_FILENAME = ""
+if os.path.exists(sys.argv[1]):
+    ARG_FILENAME = os.path.join(os.path.abspath('./'), sys.argv[1])
+    print(f"Filename: {ARG_FILENAME}")
+
+app = CsvPlotter(filename=ARG_FILENAME)
 
 # Places window in center
 app.eval('tk::PlaceWindow . center')
@@ -736,3 +753,4 @@ app.eval('tk::PlaceWindow . center')
 app.protocol("WM_DELETE_WINDOW",app.quit)
 app.mainloop()
 app.destroy()
+sys.exit()
