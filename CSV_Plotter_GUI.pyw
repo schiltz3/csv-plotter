@@ -234,7 +234,7 @@ class SelectColumns(tk.Frame):
 
         button = ttk.Button(self,
                             text="Select CSV",
-                            command=self.select_file)
+                            command=lambda:self.select_file(True))
         button.pack()
         context.select_columns_widgets.append(button)
         self.handler.register_event("SelectFile", self.select_file)
@@ -248,7 +248,7 @@ class SelectColumns(tk.Frame):
                 print(button)
                 button.destroy()
 
-    def select_file(self):
+    def select_file(self, new_file = False):
         """!
         Open file and get filename
         @par    Methods Called
@@ -257,7 +257,8 @@ class SelectColumns(tk.Frame):
         @link   self.context.filename       filename        @endlink \n
         @link   SelectColumns.widget_list   widget_list     @endlink
         """
-        if self.context.filename == "":
+        if self.context.filename == "" or new_file is True:
+            self.context.filename = ''
             print(f"Context filename: {self.context.filename}")
             self.context.filename = askopenfilename(parent = self.controller,
                                                 filetypes=[("CSV","*.csv")])
@@ -266,7 +267,7 @@ class SelectColumns(tk.Frame):
             self.clear_frame()
             button = ttk.Button(self,
                                 text="Select CSV",
-                                command=self.select_file)
+                                command=lambda:self.select_file(True))
             button.pack()
             self.context.select_columns_widgets.append(button)
             print(self.context.filename)
@@ -738,7 +739,7 @@ class Transformations:
 
 print(f"Arguments: {sys.argv}")
 ARG_FILENAME = ""
-if os.path.exists(sys.argv[1]):
+if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
     ARG_FILENAME = os.path.join(os.path.abspath('./'), sys.argv[1])
     print(f"Filename: {ARG_FILENAME}")
 
