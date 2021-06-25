@@ -8,8 +8,10 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 import os
 import csv
 import sys
+import re
 from typing import Callable
 from typing import List
+from typing import Dict
 from functools import partial
 
 import tkinter as tk
@@ -63,6 +65,14 @@ class PlotterData:
     ## List of 2nd array's Line
     line:           list = field(default_factory=list)
 
+    ## Touple for x_range
+    x_range:        str = field(default="")
+    x_range_text:        str = field(default="")
+
+    ## Touple for y_range
+    y_range:        str = field(default="")
+    y_range_text:        str = field(default="")
+
     ## List of check boxes in column menu
     check_box:      List[tk.IntVar]= field(default_factory=list)
 
@@ -72,6 +82,10 @@ class PlotterData:
     current_plot:    np.ndarray = field(init=False)
     current_legend:  str = field(default="")
     current_transformation:  str = field(default="None")
+
+    ## GraphPage Widgets
+    graph_widgets: Dict[str, tk.Widget] = field(default_factory=dict)
+
 
     def var_states(self):
         """!
@@ -421,21 +435,6 @@ class GraphPage(tk.Frame):
         self.handler = handler
 
         self.transformation = Transformations(context)
-        tk.Label(self,
-                 text="Graph Page",
-                 font=LARGE_FONT).pack()
-        self.label2 = tk.Label(self,
-                               text="",
-                               font=LARGE_FONT)
-        self.label2.pack()
-        button1 = ttk.Button(self,text="Select Columns",
-                             command=lambda:controller.show_frame(SelectColumns))
-        button1.pack(pady=10, padx=10)
-
-
-        ## List of widgets in frame
-        # @var widget_list
-        self.widget_list = []
 
         handler.register_event("Graph", self.main)
         handler.register_event("UpdateGraph", self.update_graph)
@@ -445,7 +444,6 @@ class GraphPage(tk.Frame):
         Called when Update Graph is clicked
         @param  self    The object pointer
         @par    Global Variables Affected
-        @link   widget_list                                 @endlink\n
         @link   PlotterData.file_data        file_data      @endlink\n
         @link   PlotterData.use_cols_titles use_cols_titles @endlink\n
         @link   PlotterData.line             line           @endlink\n
@@ -453,23 +451,32 @@ class GraphPage(tk.Frame):
 
         @par    Methods called
         @link   get_array                                   @endlink\n
-        @link   update_graph_menu                           @endlink
+        @link   create_graph_menu                           @endlink
         """
-        print ("Graph Main:")
-        #print (f"file_data:\n{self.context.file_data}")
-        #print (f"use_cols_titles: {self.context.use_cols_titles}")
-        self.label2['text'] = os.path.basename(self.context.filename).split('.')[0]
-        for widget in self.widget_list:
+        for widget in self.context.graph_widgets.values():
             widget.destroy()
 
-        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
-                self.context.use_cols_titles,
-                self.get_array(self.context.file_data, -1),
-                self.context.use_cols_titles[-1])
+        self.context.graph_widgets["Title"] = tk.Label(self,
+                                                  text="Graph Page",
+                                                  font=LARGE_FONT)
+        self.context.graph_widgets["FileTitle"] = tk.Label(self,
+                                                      text="",
+                                                      font=LARGE_FONT)
+
+        self.context.graph_widgets["SelectColumns"] = ttk.Button(self, text="Select Columns",
+                             command=lambda:self.controller.show_frame(SelectColumns))
+        self.context.graph_widgets["FileTitle"]['text'] = os.path.basename(self.context.filename).split('.')[0]
 
         self.context.current_plot = self.get_array(self.context.file_data, -1)
-        self.update_graph_menu()
+        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
+                self.context.use_cols_titles,
+                self.context.current_plot,
+                self.context.use_cols_titles[-1])
+
+        self.create_graph_menu()
         self.create_transformation_menu()
+        self.create_range_menu()
+        self.render_page()
 
         self.controller.eval('tk::PlaceWindow . center')
 
@@ -484,7 +491,6 @@ class GraphPage(tk.Frame):
         @param  data_array  Array of data for 2nd graph
         @param  legends_2   Legend for the 2nd Array
         @par    Global variables affected
-        @link   widget_list @endlink\n
         @retval line_2      Handle for the 2nd graph's Line
         @retval figure      Handle for the 2nd graph's figure
         """
@@ -510,19 +516,10 @@ class GraphPage(tk.Frame):
 
         canvas = FigureCanvasTkAgg(figure, self)
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM,
-                                  fill=tk.BOTH,
-                                  expand=True)
-
-        toolbar = NavigationToolbar2Tk(canvas, self)
-        toolbar.update()
-        self.widget_list.append(toolbar)
-
-        graph_widget = canvas._tkcanvas
-        graph_widget.pack(side=tk.TOP,
-                              fill=tk.BOTH,
-                              expand=True)
-        self.widget_list.append(graph_widget)
+        self.context.graph_widgets["Canvas"] = canvas.get_tk_widget()
+        self.context.graph_widgets["Toolbar"] = NavigationToolbar2Tk(canvas, self)
+        self.context.graph_widgets["Toolbar"].update()
+        self.context.graph_widgets["TKCanvas"] = canvas._tkcanvas
         return line_2, figure
 
     def get_array(self, data_array, _col):
@@ -538,7 +535,7 @@ class GraphPage(tk.Frame):
             return data_array[:,_col]
         return data_array
     # dynamically make menu of lines to switch bottem graph to
-    def update_graph_menu(self):
+    def create_graph_menu(self):
         """!
         Updates the Graph Menu
         @param  self    The object pointer
@@ -546,28 +543,86 @@ class GraphPage(tk.Frame):
         @link   PlotterData.use_cols_titles @endlink\n
         @link   PlotterData.line    line    @endlink\n
         @link   fig                         @endlink\n
-        @link   widget_list                 @endlink
         """
 
+        graph_menu = tk.Frame(self)
         for _column, title in enumerate(self.context.use_cols_titles):
-            button = ttk.Button(self,
+            button = ttk.Button(graph_menu,
                     text=title,
                     command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
                         title))
             button.pack(side=tk.LEFT,pady=4)
-            self.widget_list.append(button)
+        self.context.graph_widgets["GraphMenu"] = graph_menu
+
+    def validate_range(self, newval, op):
+        pattern = '^-?\d+,\d+$'
+        partial_pattern = '^-?\d+,?(\d+)?'
+        formatmsg = "Format: <min-range,max-range>"
+        self.context.x_range_text=''
+        print(f"NewVal: {newval}")
+        match = re.match(pattern, newval)
+        print(f"Match: {match}")
+        if match:
+            valid = True
+        else:
+            valid = False
+
+        ok_so_far = False
+        print(f"op: {op}")
+        if op=='key':
+            ok_so_far = re.match(partial_pattern, newval) is not None
+            if not ok_so_far:
+                self.context.x_range_text = formatmsg
+            return ok_so_far
+        elif op=='focusout':
+            if not valid:
+                self.context.x_range_text = "Incorect Format"
+        return valid
+
+    def create_range_menu(self):
+        """!
+        Creates the widges for the the range entry boxes
+        """
+        range_frame = ttk.Frame(self)
+
+        validate_range_wrapper = (range_frame.register(self.validate_range), '%P', '%V')
+
+        widget = ttk.Label(range_frame, text="X Range <low,high>")
+        widget.pack(side=tk.LEFT, padx = 5)
+        widget = ttk.Entry(range_frame,
+                textvariable=self.context.x_range,
+                validate='key',
+                validatecommand=validate_range_wrapper)
+        widget.pack(side=tk.LEFT, anchor=tk.W, pady=10, padx=10)
+
+        widget = ttk.Label(range_frame, text="Y Range <low,high>")
+        widget.pack(side=tk.LEFT, padx = 5)
+        widget = ttk.Entry(range_frame, textvariable=self.context.y_range)
+        widget.pack(side=tk.LEFT, anchor=tk.W, pady=10, padx=10)
+        self.context.graph_widgets["RangeMenu"] = range_frame
 
     def create_transformation_menu(self):
+        """!
+        Creates the widges for the the transformation menu
+        """
+        transform_menu = tk.Frame(self)
         for trans in self.transformation.get_list_of_transformations():
-            print(trans)
-            button = ttk.Button(self,
+            button = ttk.Button(transform_menu,
                     text=str(trans),
                     command=partial(self.change_transformation,
                         trans))
 
             button.pack(side=tk.RIGHT,pady=4)
-            self.widget_list.append(button)
+        self.context.graph_widgets["TransformationMenu"] = transform_menu
+
+    def render_page(self):
+        """!
+        Lays out all of the widgets on the graph page
+        """
+        for widget in self.context.graph_widgets.values():
+            widget.pack()
+
 
     def change_array(self, array, legend, **kwargs):
         """Set the current plot and current legend then update the graph
@@ -741,7 +796,6 @@ print(f"Arguments: {sys.argv}")
 ARG_FILENAME = ""
 if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
     ARG_FILENAME = os.path.join(os.path.abspath('./'), sys.argv[1])
-    print(f"Filename: {ARG_FILENAME}")
 
 app = CsvPlotter(filename=ARG_FILENAME)
 
