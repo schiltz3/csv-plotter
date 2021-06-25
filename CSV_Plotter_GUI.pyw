@@ -123,7 +123,6 @@ class PlotterEvents:
         @param  event_id    The key for the function in the events dictionary
         @param  kwargs        The keyword arguments passed to the function
         """
-        print(f"Event ID: {event_id}")
         self.events.get(event_id)(**kwargs)
 
     def register_event(self, event_id, function):
@@ -245,7 +244,6 @@ class SelectColumns(tk.Frame):
         """
         if len(self.context.select_columns_widgets) > 0:
             for button in self.context.select_columns_widgets:
-                print(button)
                 button.destroy()
 
     def select_file(self, new_file = False):
@@ -259,7 +257,6 @@ class SelectColumns(tk.Frame):
         """
         if self.context.filename == "" or new_file is True:
             self.context.filename = ''
-            print(f"Context filename: {self.context.filename}")
             self.context.filename = askopenfilename(parent = self.controller,
                                                 filetypes=[("CSV","*.csv")])
 
@@ -270,7 +267,6 @@ class SelectColumns(tk.Frame):
                                 command=lambda:self.select_file(True))
             button.pack()
             self.context.select_columns_widgets.append(button)
-            print(self.context.filename)
             self.main_init()
 
     def graph(self):
@@ -291,7 +287,6 @@ class SelectColumns(tk.Frame):
             self.spam = False
             self.main()
         elif self.spam is False:
-            print("Select at least one Box")
             label = ttk.Label(self,
                              text="Select at least one Box",
                              font=('bold'))
@@ -361,10 +356,8 @@ class SelectColumns(tk.Frame):
 
         # Get the title row from doc
         self.context.get_title_row()
-        print(self.context.title_row)
         # Create Check box menu from title row
         self.create_checkboxes()
-        print("Created menu")
 
     def main(self):
         """!
@@ -380,9 +373,6 @@ class SelectColumns(tk.Frame):
         """
         # Get columns and column Titles selected in the checkbox menu from doc
         self.get_column_titles()
-        print(f"use_cols_titles: {self.context.use_cols_titles}")
-        print(f"use_cols: {self.context.use_cols}")
-
 
         # Open file and create 2D array from data
         self.context.file_data = np.genfromtxt(self.context.filename,
@@ -393,7 +383,6 @@ class SelectColumns(tk.Frame):
                                   autostrip=True,
                                   filling_values=0)
         #print(np.info(dataArray))
-        print(self.context.file_data)
         self.handler.trigger_event("Graph")
         self.controller.show_frame(GraphPage)
 
@@ -455,9 +444,6 @@ class GraphPage(tk.Frame):
         @link   get_array                                   @endlink\n
         @link   update_graph_menu                           @endlink
         """
-        print ("Graph Main:")
-        #print (f"file_data:\n{self.context.file_data}")
-        #print (f"use_cols_titles: {self.context.use_cols_titles}")
         self.label2['text'] = os.path.basename(self.context.filename).split('.')[0]
         for widget in self.widget_list:
             widget.destroy()
@@ -560,7 +546,6 @@ class GraphPage(tk.Frame):
 
     def create_transformation_menu(self):
         for trans in self.transformation.get_list_of_transformations():
-            print(trans)
             button = ttk.Button(self,
                     text=str(trans),
                     command=partial(self.change_transformation,
@@ -574,7 +559,6 @@ class GraphPage(tk.Frame):
         using the current transformation"""
         self.context.current_plot = array
         self.context.current_legend = legend
-        print(legend)
         self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
 
     def change_transformation(self, transformation, **kwargs):
@@ -662,7 +646,6 @@ class Transformations:
         @param  transform_id    The key for the function in the transforms dictionary
         @param  kwargs          The keyword args passed to the function
         """
-        print(f"Transformation ID: {transform_id}")
         return self.transforms.get(transform_id)(**kwargs)
 
     def register_transform(self, transform_id, function):
@@ -682,7 +665,6 @@ class Transformations:
         returns a list of of transforms keys
         @return self.transforms keys
         """
-        #print(f"Transform Keys: {self.transforms.keys()}")
         return self.transforms.keys()
 
     def fourier(self, **kwargs):
@@ -726,7 +708,6 @@ class Transformations:
                     crossings += 1
                     pos = False
             frequency[i] = crossings
-#            print(f"History: {history}\tCrossings: {crossings}")
 
         _return["y_data"] = frequency
         _return["x_lab"] = ".01 Second"
@@ -737,7 +718,6 @@ class Transformations:
 # Named tuple to store name and function reference in
 
 
-print(f"Arguments: {sys.argv}")
 ARG_FILENAME = ""
 if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
     ARG_FILENAME = os.path.join(os.path.abspath('./'), sys.argv[1])
