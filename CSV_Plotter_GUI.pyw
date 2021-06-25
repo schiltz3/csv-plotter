@@ -504,7 +504,7 @@ class GraphPage(tk.Frame):
 
         plt.autoscale(enable=True,axis='both',tight=True)
         plt.ylabel('Magnetic field [LSB]',backgroundcolor='white')
-
+        self.context.current_legend = legends_2
         axes_2.legend((line_2[0],),(legends_2,),loc=1,bbox_to_anchor=(1.085,1))
 
 
