@@ -12,7 +12,7 @@ The CSV must be in the following format to use with this reader
 ### Install python libraries:
 #### On Linux or Windows:
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 ### Install the tk C++ library for Python3 (only on Linux):
 ```bash
