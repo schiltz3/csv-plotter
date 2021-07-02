@@ -30,6 +30,8 @@ matplotlib.use("TkAgg")
 
 
 
+## Font for Titles
+# @var LARGE_FONT
 LARGE_FONT= ("Verdana", 12)
 
 @dataclass
@@ -239,9 +241,6 @@ class SelectColumns(tk.Frame):
         context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
         context.title_label.pack(pady=10,padx=10)
 
-        ## List of widgets in frame
-        # @var widget_list
-
         ## Prevents user from spamming button
         # @var spam
         self.spam = False
@@ -266,10 +265,10 @@ class SelectColumns(tk.Frame):
         """!
         Open file and get filename
         @par    Methods Called
-        @link   main_init                                   @endlink
+        @link   main_init                   @endlink
         @par    Global Variables Affected
-        @link   self.context.filename       filename        @endlink \n
-        @link   SelectColumns.widget_list   widget_list     @endlink
+        PlotterData.filename\n
+        SelectColumns.widget_list
         """
         if self.context.filename == "" or new_file is True:
             self.context.filename = ''
@@ -296,8 +295,8 @@ class SelectColumns(tk.Frame):
         @link   main            @endlink
 
         @par Global Variables Affected
-        @link   widget_list     @endlink\n
-        @link   spam            @endlink
+        widget_list\n
+        spam
         """
         if self.context.confirm_check() is True:
             if self.spam is True:
@@ -319,7 +318,7 @@ class SelectColumns(tk.Frame):
         @param  self        The object pointer
         @par    Global Variables Affected
         @link   check_box   @endlink\n
-        @link   title_label @endlink\n
+        @link   PlotterData.title_label @endlink\n
         @link   widget_list @endlink
         """
         self.context.check_box = []
@@ -346,10 +345,10 @@ class SelectColumns(tk.Frame):
         @param  self     The object pointer
         @par Global Variables Affected
         @link   PlotterData.use_cols                            @endlink\n
-        @link   convert_boxes                                   @endlink\n
-        @link   CsvPlotter.use_cols_titles  use_cols_titles     @endlink\n
+        @link   PlotterData.convert_boxes                                   @endlink\n
+        @link   PlotterData.use_cols_titles  use_cols_titles     @endlink\n
         @link   PlotterData.checkboxes                          @endlink\n
-        @link   title_row                                       @endlink\n
+        @link   PlotterData.title_row                                       @endlink\n
         """
         self.context.use_cols = []
         self.context.use_cols_titles = []
@@ -444,7 +443,7 @@ class GraphPage(tk.Frame):
         Called when Update Graph is clicked
         @param  self    The object pointer
         @par    Global Variables Affected
-        @link   PlotterData.file_data        file_data      @endlink\n
+        @link   file_data        file_data      @endlink\n
         @link   PlotterData.use_cols_titles use_cols_titles @endlink\n
         @link   PlotterData.line             line           @endlink\n
         @link   fig                                         @endlink
@@ -703,6 +702,9 @@ class Transformations:
     Class that handles transforms for GraphPage
     """
     def __init__(self, context):
+        """!
+        @param context          A handle to the event handler
+        """
         ## instence of @link DataClass @end
         self.context = context
         ## Dictionary for Transformation Title : transformation handle
