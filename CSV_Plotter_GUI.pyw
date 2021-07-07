@@ -497,6 +497,7 @@ class GraphPage(tk.Frame):
         figure = plt.figure(figsize=(16,6))
         axes_1 = figure.add_subplot(211)
         axes_1.plot(plot_data)
+        plt.subplots_adjust(left=.08)
         plt.grid()
         plt.autoscale(enable=True,axis='both',tight=True)
         plt.ylabel('Magnetic field [LSB]',backgroundcolor='white')
