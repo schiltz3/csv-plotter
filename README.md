@@ -7,6 +7,7 @@ The CSV must be in the following format to use with this reader
 |Column Name|Column Name|...|
 |---|---|---|
 |data|data|...|
+|...|...|...|...|
 
 ## Instalation
 ### Install python libraries:
