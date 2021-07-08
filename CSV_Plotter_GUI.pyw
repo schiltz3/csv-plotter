@@ -78,7 +78,7 @@ class PlotterData:
     ## List of check boxes in column menu
     check_box:      List[tk.IntVar]= field(default_factory=list)
 
-    select_columns_widgets:     list = field(default_factory=list)
+    select_columns_widgets: Dict[str, tk.Widget] = field(default_factory=dict)
 
     ## The current column being plotted
     current_plot:    np.ndarray = field(init=False)
@@ -175,14 +175,16 @@ class CsvPlotter(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.wm_title(self, "CSV Plotter")
 
+        self.columnconfigure(0,weight=1)
+        self.rowconfigure(0,weight=1)
+        self.resizable(True, True)
+
         ## Frame that all other pages are added to
         container = tk.Frame(self)
+        container.columnconfigure(0, weight=1)
+        container.rowconfigure(0, weight=1)
+        container.grid(sticky=tk.NSEW)
 
-        container.pack(side="top",
-                       fill="both",
-                       expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
 
         context = PlotterData()
         context.filename = filename
@@ -198,7 +200,8 @@ class CsvPlotter(tk.Tk):
             context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
-                       sticky="nsew")
+                       sticky=tk.NSEW)
+            frame.grid_remove()
 
         events.trigger_event("SelectFile")
         self.show_frame(SelectColumns)
@@ -209,8 +212,15 @@ class CsvPlotter(tk.Tk):
         @param    self    the object pointer
         @param    cont    pointer to frame to raise
         """
+        for F in self.context.frames.values():
+            F.grid_remove()
         frame = self.context.frames[cont]
+        frame.grid()
         frame.tkraise()
+        self.update()
+        self.geometry("")
+        self.eval('tk::PlaceWindow . center')
+
 
 class SelectColumns(tk.Frame):
     """!
@@ -221,6 +231,7 @@ class SelectColumns(tk.Frame):
 
         tk.Frame.__init__(self, parent)
 
+        self.columnconfigure(0, weight=1)
 
         ## Object pointer to parent frame
         # @var parent
@@ -239,7 +250,7 @@ class SelectColumns(tk.Frame):
         ## Page Title widget handle
         # @var title_label
         context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
-        context.title_label.pack(pady=10,padx=10)
+        context.title_label.grid(column=0, sticky=tk.N)
 
         ## Prevents user from spamming button
         # @var spam
@@ -248,8 +259,8 @@ class SelectColumns(tk.Frame):
         button = ttk.Button(self,
                             text="Select CSV",
                             command=lambda:self.select_file(True))
-        button.pack()
-        context.select_columns_widgets.append(button)
+        button.grid(column=0, sticky=tk.NSEW)
+        context.select_columns_widgets["SelectCSV"] = button
         self.handler.register_event("SelectFile", self.select_file)
 
     def clear_frame(self):
@@ -257,7 +268,7 @@ class SelectColumns(tk.Frame):
         Clear widget list
         """
         if len(self.context.select_columns_widgets) > 0:
-            for button in self.context.select_columns_widgets:
+            for button in self.context.select_columns_widgets.values():
                 print(button)
                 button.destroy()
 
@@ -281,8 +292,7 @@ class SelectColumns(tk.Frame):
             button = ttk.Button(self,
                                 text="Select CSV",
                                 command=lambda:self.select_file(True))
-            button.pack()
-            self.context.select_columns_widgets.append(button)
+            self.context.select_columns_widgets["SelectCSV"] = button
             print(self.context.filename)
             self.main_init()
 
@@ -300,7 +310,7 @@ class SelectColumns(tk.Frame):
         """
         if self.context.confirm_check() is True:
             if self.spam is True:
-                self.context.select_columns_widgets.pop().destroy()
+                self.context.select_columns_widgets.get("Spam").destroy()
             self.spam = False
             self.main()
         elif self.spam is False:
@@ -308,8 +318,7 @@ class SelectColumns(tk.Frame):
             label = ttk.Label(self,
                              text="Select at least one Box",
                              font=('bold'))
-            label.pack()
-            self.context.select_columns_widgets.append(label)
+            self.context.select_columns_widgets["Spam"] = label
             self.spam = True
 
     def create_checkboxes(self):
@@ -323,21 +332,29 @@ class SelectColumns(tk.Frame):
         """
         self.context.check_box = []
         self.context.title_label['text'] = os.path.basename(self.context.filename).split('.')[0]
+        checkbutton_frame = tk.Frame(self)
         for  _title in self.context.title_row:
             check = tk.IntVar()
-            button = ttk.Checkbutton(self,
+            button = ttk.Checkbutton(checkbutton_frame,
                            text=_title,
                            variable=check
                            )
-            button.pack()
-            self.context.select_columns_widgets.append(button)
+            button.grid(column=0,sticky=tk.NSEW)
             self.context.check_box.append(check)
 
+
+        self.context.select_columns_widgets["checkbutton_frame"] = checkbutton_frame
         button = ttk.Button(self,
                            text="Go To Graph Page",
                            command=self.graph)
-        button.pack()
-        self.context.select_columns_widgets.append(button)
+        self.context.select_columns_widgets["Graph"] = button
+
+        self.render_page()
+
+    def render_page(self):
+        for widget in self.context.select_columns_widgets.values():
+            widget.grid(column=0, sticky=tk.NSEW)
+
 
     def get_column_titles(self):
         """!
@@ -517,9 +534,9 @@ class GraphPage(tk.Frame):
         canvas = FigureCanvasTkAgg(figure, self)
         canvas.draw()
         self.context.graph_widgets["Canvas"] = canvas.get_tk_widget()
-        self.context.graph_widgets["Toolbar"] = NavigationToolbar2Tk(canvas, self)
+        self.context.graph_widgets["Toolbar"] = NavigationToolbar2Tk(canvas, self, pack_toolbar=False)
         self.context.graph_widgets["Toolbar"].update()
-        self.context.graph_widgets["TKCanvas"] = canvas._tkcanvas
+        #self.context.graph_widgets["TKCanvas"] = canvas._tkcanvas
         return line_2, figure
 
     def get_array(self, data_array, _col):
@@ -552,7 +569,7 @@ class GraphPage(tk.Frame):
                     command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
                         title))
-            button.pack(side=tk.LEFT,pady=4)
+            button.grid(padx=4)
         self.context.graph_widgets["GraphMenu"] = graph_menu
 
     def validate_range(self, newval, op):
@@ -589,17 +606,20 @@ class GraphPage(tk.Frame):
         validate_range_wrapper = (range_frame.register(self.validate_range), '%P', '%V')
 
         widget = ttk.Label(range_frame, text="X Range <low,high>")
-        widget.pack(side=tk.LEFT, padx = 5)
+        widget.grid(column=0, row=0)
         widget = ttk.Entry(range_frame,
                 textvariable=self.context.x_range,
                 validate='key',
                 validatecommand=validate_range_wrapper)
-        widget.pack(side=tk.LEFT, anchor=tk.W, pady=10, padx=10)
+        widget.grid(column=0, row=1)
 
         widget = ttk.Label(range_frame, text="Y Range <low,high>")
-        widget.pack(side=tk.LEFT, padx = 5)
-        widget = ttk.Entry(range_frame, textvariable=self.context.y_range)
-        widget.pack(side=tk.LEFT, anchor=tk.W, pady=10, padx=10)
+        widget.grid(column=1, row=0)
+        widget = ttk.Entry(range_frame, 
+                textvariable=self.context.y_range,
+                validate='key',
+                validatecommand=validate_range_wrapper)
+        widget.grid(column=1, row=1)
         self.context.graph_widgets["RangeMenu"] = range_frame
 
     def create_transformation_menu(self):
@@ -607,23 +627,59 @@ class GraphPage(tk.Frame):
         Creates the widges for the the transformation menu
         """
         transform_menu = tk.Frame(self)
-        for trans in self.transformation.get_list_of_transformations():
+        for count, trans in enumerate(self.transformation.get_list_of_transformations()):
             button = ttk.Button(transform_menu,
                     text=str(trans),
                     command=partial(self.change_transformation,
                         trans))
-
-            button.pack(side=tk.RIGHT,pady=4)
+            button.grid(row=0,column=count,padx=2)
         self.context.graph_widgets["TransformationMenu"] = transform_menu
 
     def render_page(self):
         """!
         Lays out all of the widgets on the graph page
         """
-        for widget in self.context.graph_widgets.values():
-            widget.pack()
-
-
+        NUM_OF_COLUMNS = 3 
+        NUM_OF_ROWS = 6
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=4)
+        self.columnconfigure(2, weight=1)
+        self.rowconfigure(0, weight=1)
+        print(self.context.graph_widgets.keys())
+        self.context.graph_widgets.get("Title").grid(column=0,
+                row=0,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.N)
+        self.context.graph_widgets.get("FileTitle").grid(column=0,
+                row=1,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.N)
+        self.context.graph_widgets.get("SelectColumns").grid(column=0,
+                row=2,
+                columnspan=NUM_OF_COLUMNS)
+        self.context.graph_widgets.get("Canvas").grid(column=1,
+                row=3,
+                rowspan=4,
+                sticky=tk.E)
+        self.context.graph_widgets.get("GraphMenu").grid(column=0,
+                row=6,
+                sticky=tk.W)
+        self.context.graph_widgets.get("Toolbar").grid(column=1,
+                row=7,
+                columnspan=5,
+                sticky=tk.W)
+        self.context.graph_widgets.get("RangeMenu").grid(column=3,
+                row=7,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.E)
+        self.context.graph_widgets.get("TransformationMenu").grid(column=1,
+                row=8,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.W)
+        for x in range(NUM_OF_COLUMNS):
+            self.columnconfigure(x, weight=1)
+        for y in range(NUM_OF_ROWS):
+            self.rowconfigure(y, weight=1)
     def change_array(self, array, legend, **kwargs):
         """Set the current plot and current legend then update the graph
         using the current transformation"""
