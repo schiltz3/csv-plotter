@@ -68,8 +68,8 @@ class PlotterData:
     line:           list = field(default_factory=list)
 
     ## Touple for x_range
-    x_range:        str = field(default="")
-    x_range_text:        str = field(default="")
+    x_range:        tuple = field(default=(0,0))
+    x_range_text:   tk.StringVar     = field(default_factory=tk.StringVar)
 
     ## Touple for y_range
     y_range:        str = field(default="")
@@ -514,7 +514,7 @@ class GraphPage(tk.Frame):
         figure = plt.figure(figsize=(16,6))
         axes_1 = figure.add_subplot(211)
         axes_1.plot(plot_data)
-        plt.subplots_adjust(left=.08)
+        #plt.subplots_adjust(left=.08)
         plt.grid()
         plt.autoscale(enable=True,axis='both',tight=True)
         plt.ylabel('Magnetic field [LSB]',backgroundcolor='white')
@@ -563,38 +563,42 @@ class GraphPage(tk.Frame):
         """
 
         graph_menu = tk.Frame(self)
+        graph_menu.columnconfigure(0,weight=1)
         for _column, title in enumerate(self.context.use_cols_titles):
             button = ttk.Button(graph_menu,
                     text=title,
                     command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
                         title))
-            button.grid(padx=4)
+            button.grid(padx=4,
+                    sticky=tk.NSEW)
         self.context.graph_widgets["GraphMenu"] = graph_menu
 
-    def validate_range(self, newval, op):
-        pattern = '^-?\d+,\d+$'
-        partial_pattern = '^-?\d+,?(\d+)?'
-        formatmsg = "Format: <min-range,max-range>"
-        self.context.x_range_text=''
-        print(f"NewVal: {newval}")
-        match = re.match(pattern, newval)
-        print(f"Match: {match}")
-        if match:
-            valid = True
-        else:
-            valid = False
-
-        ok_so_far = False
+    def validate_range(self,  axis, newval, op):
+        PATTERN = '^-?\d+,\d+$'
+        PARTIAL_PATTERN = '^-?$|^-?\d+,?(\d+)?$'
         print(f"op: {op}")
+        print(f"NewVal: {newval}")
+
+        match = re.match(PATTERN, newval)
+        valid = bool(match)
+        print(f"Match: {match}")
+        print(f"Valid: {valid}")
+        print(f"Axis: {axis}")
+
         if op=='key':
-            ok_so_far = re.match(partial_pattern, newval) is not None
-            if not ok_so_far:
-                self.context.x_range_text = formatmsg
+            ok_so_far = re.match(PARTIAL_PATTERN, newval) is not None
+            if valid:
+                self.context.x_range = tuple(map(int,newval.split(",")))
+                self.update_graph(x_range= self.context.x_range, normal_x_direction = True)
             return ok_so_far
         elif op=='focusout':
-            if not valid:
-                self.context.x_range_text = "Incorect Format"
+            if valid:
+                self.context.x_range = tuple(map(int,self.context.x_range_text.get().split(",")))
+                self.update_graph(x_range= self.context.x_range)
+                print(f"x_range: {self.context.x_range}")
+            else:
+                self.update_graph()
         return valid
 
     def create_range_menu(self):
@@ -603,22 +607,26 @@ class GraphPage(tk.Frame):
         """
         range_frame = ttk.Frame(self)
 
-        validate_range_wrapper = (range_frame.register(self.validate_range), '%P', '%V')
+        axis = "x"
+        validate_range_wrapper = (range_frame.register(self.validate_range), axis, '%P', '%V')
 
         widget = ttk.Label(range_frame, text="X Range <low,high>")
+        self.context.x_range_text.set("low,high")
         widget.grid(column=0, row=0)
         widget = ttk.Entry(range_frame,
-                textvariable=self.context.x_range,
-                validate='key',
+                textvariable=self.context.x_range_text,
+                validate="all",
                 validatecommand=validate_range_wrapper)
         widget.grid(column=0, row=1)
 
+        axis = "y"
+        validate_range_wrapper_y = (range_frame.register(self.validate_range), axis, '%P', '%V')
         widget = ttk.Label(range_frame, text="Y Range <low,high>")
         widget.grid(column=1, row=0)
-        widget = ttk.Entry(range_frame, 
+        widget = ttk.Entry(range_frame,
                 textvariable=self.context.y_range,
-                validate='key',
-                validatecommand=validate_range_wrapper)
+                validate="key",
+                validatecommand=validate_range_wrapper_y)
         widget.grid(column=1, row=1)
         self.context.graph_widgets["RangeMenu"] = range_frame
 
@@ -639,53 +647,57 @@ class GraphPage(tk.Frame):
         """!
         Lays out all of the widgets on the graph page
         """
-        NUM_OF_COLUMNS = 3 
-        NUM_OF_ROWS = 6
+        NUM_OF_COLUMNS = 3
         self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=4)
-        self.columnconfigure(2, weight=1)
+        self.columnconfigure(1, weight=100)
+        self.columnconfigure(2, weight=0)
         self.rowconfigure(0, weight=1)
-        print(self.context.graph_widgets.keys())
-        self.context.graph_widgets.get("Title").grid(column=0,
-                row=0,
-                columnspan=NUM_OF_COLUMNS,
-                sticky=tk.N)
+        self.rowconfigure(1, weight=5)
+        self.rowconfigure(2, weight=5)
+        self.rowconfigure(3, weight=100)
+        self.rowconfigure(4, weight=0)
+        self.rowconfigure(5, weight=0)
+        self.rowconfigure(6, weight=1)
+        self.rowconfigure(7, weight=0)
+        self.rowconfigure(8, weight=0)
+#        self.context.graph_widgets.get("Title").grid(column=0,
+#                row=0,
+#                columnspan=NUM_OF_COLUMNS,
+#                sticky=tk.N)
         self.context.graph_widgets.get("FileTitle").grid(column=0,
                 row=1,
                 columnspan=NUM_OF_COLUMNS,
-                sticky=tk.N)
+                sticky=tk.NS)
         self.context.graph_widgets.get("SelectColumns").grid(column=0,
                 row=2,
-                columnspan=NUM_OF_COLUMNS)
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.N)
+        #self.rowconfigure(2, minsize=font.nametofont("TkDefaultFont").)
+        self.rowconfigure(2, minsize=25)
         self.context.graph_widgets.get("Canvas").grid(column=1,
                 row=3,
                 rowspan=4,
-                sticky=tk.E)
+                sticky=tk.NSEW)
         self.context.graph_widgets.get("GraphMenu").grid(column=0,
                 row=6,
-                sticky=tk.W)
+                sticky=tk.NSEW)
         self.context.graph_widgets.get("Toolbar").grid(column=1,
                 row=7,
-                columnspan=5,
                 sticky=tk.W)
-        self.context.graph_widgets.get("RangeMenu").grid(column=3,
+        self.context.graph_widgets.get("RangeMenu").grid(column=1,
                 row=7,
                 columnspan=NUM_OF_COLUMNS,
-                sticky=tk.E)
+                sticky=tk.E,
+                ipady=5)
         self.context.graph_widgets.get("TransformationMenu").grid(column=1,
                 row=8,
                 columnspan=NUM_OF_COLUMNS,
-                sticky=tk.W)
-        for x in range(NUM_OF_COLUMNS):
-            self.columnconfigure(x, weight=1)
-        for y in range(NUM_OF_ROWS):
-            self.rowconfigure(y, weight=1)
+                sticky=tk.E)
     def change_array(self, array, legend, **kwargs):
         """Set the current plot and current legend then update the graph
         using the current transformation"""
         self.context.current_plot = array
         self.context.current_legend = legend
-        print(legend)
         self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
 
     def change_transformation(self, transformation, **kwargs):
@@ -743,12 +755,19 @@ class GraphPage(tk.Frame):
         axis.autoscale(enable=True,axis='both',tight=True)
         if "x_range" in kwargs:
             print(f"x_range: {kwargs.get('x_range')}")
-            axis.set_autoscalex_on()
-            axis.set_xscale = kwargs.pop("x_range")
+            axis.set_xlim(kwargs.pop("x_range"))
         if "y_range" in kwargs:
             print(f"y_range: {kwargs.get('y_range')}")
-            axis.set_autoscaley_on(False)
-            axis.set_yscale = kwargs.pop("y_range")
+            axis.set_ylim(kwargs.pop("y_range"))
+
+        if "normal_x_direction" in kwargs:
+            print("Normal X Direction")
+            if axis.xaxis_inverted():
+                axis.invert_xaxis()
+        if "normal_y_direction" in kwargs:
+            print("Normal Y Direction")
+            if axis.yaxis_inverted():
+                axis.invert_yaxis()
 
         # Force update
         self.context.fig.canvas.draw()
@@ -796,7 +815,6 @@ class Transformations:
         returns a list of of transforms keys
         @return self.transforms keys
         """
-        #print(f"Transform Keys: {self.transforms.keys()}")
         return self.transforms.keys()
 
     def fourier(self, **kwargs):
