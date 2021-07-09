@@ -349,7 +349,7 @@ class SelectColumns(tk.Frame):
 
     def render_page(self):
         for widget in self.context.select_columns_widgets.values():
-            widget.grid(column=0, sticky=tk.NSEW)
+            widget.grid(column=0, sticky=tk.NSEW, padx=1, pady=1)
 
 
     def get_column_titles(self):
@@ -461,10 +461,6 @@ class GraphPage(tk.Frame):
         """
         for widget in self.context.graph_widgets.values():
             widget.destroy()
-
-        self.context.graph_widgets["Title"] = tk.Label(self,
-                                                  text="Graph Page",
-                                                  font=LARGE_FONT)
         self.context.graph_widgets["FileTitle"] = tk.Label(self,
                                                       text="",
                                                       font=LARGE_FONT)
@@ -560,7 +556,7 @@ class GraphPage(tk.Frame):
                     command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
                         title))
-            button.grid(padx=4,
+            button.grid(padx=1,
                     sticky=tk.NSEW)
         self.context.graph_widgets["GraphMenu"] = graph_menu
 
@@ -648,7 +644,7 @@ class GraphPage(tk.Frame):
                     text=str(trans),
                     command=partial(self.change_transformation,
                         trans))
-            button.grid(row=0,column=count,padx=2)
+            button.grid(row=0,column=count,padx=1,pady=1)
         self.context.graph_widgets["TransformationMenu"] = transform_menu
 
     def render_page(self):
@@ -656,51 +652,51 @@ class GraphPage(tk.Frame):
         Lays out all of the widgets on the graph page
         """
         NUM_OF_COLUMNS = 3
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1, minsize = 45)
         self.columnconfigure(1, weight=100)
-        self.columnconfigure(2, weight=0)
-        self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=5)
-        self.rowconfigure(2, weight=5)
-        self.rowconfigure(3, weight=100)
+        self.rowconfigure(0, weight=10, minsize=30)
+        self.rowconfigure(1, weight=2, minsize=25)
+        self.rowconfigure(2, weight=100)
+        self.rowconfigure(3, weight=0)
         self.rowconfigure(4, weight=0)
-        self.rowconfigure(5, weight=0)
-        self.rowconfigure(6, weight=1)
+        self.rowconfigure(5, weight=2)
+        self.rowconfigure(6, weight=0)
         self.rowconfigure(7, weight=0)
-        self.rowconfigure(8, weight=0)
-#        self.context.graph_widgets.get("Title").grid(column=0,
-#                row=0,
-#                columnspan=NUM_OF_COLUMNS,
-#                sticky=tk.N)
         self.context.graph_widgets.get("FileTitle").grid(column=0,
-                row=1,
+                row=0,
                 columnspan=NUM_OF_COLUMNS,
                 sticky=tk.NS)
-        self.context.graph_widgets.get("SelectColumns").grid(column=0,
-                row=2,
-                columnspan=NUM_OF_COLUMNS,
-                sticky=tk.N)
-        #self.rowconfigure(2, minsize=font.nametofont("TkDefaultFont").)
-        self.rowconfigure(2, minsize=25)
-        self.context.graph_widgets.get("Canvas").grid(column=1,
-                row=3,
-                rowspan=4,
-                sticky=tk.NSEW)
-        self.context.graph_widgets.get("GraphMenu").grid(column=0,
-                row=6,
-                sticky=tk.NSEW)
         self.context.graph_widgets.get("Toolbar").grid(column=1,
-                row=7,
-                sticky=tk.W)
-        self.context.graph_widgets.get("RangeMenu").grid(column=1,
-                row=7,
+                row=1,
+                sticky=tk.W+tk.S)
+        self.context.graph_widgets.get("SelectColumns").grid(column=0,
+                row=1,
                 columnspan=NUM_OF_COLUMNS,
-                sticky=tk.E,
-                ipady=5)
+                sticky=tk.NS,
+                padx=1,
+                pady=1)
+        self.context.graph_widgets.get("Canvas").grid(column=1,
+                row=2,
+                rowspan=4,
+                sticky=tk.NSEW,
+                padx=1,
+                pady=1)
+        self.context.graph_widgets.get("GraphMenu").grid(column=0,
+                row=5,
+                sticky=tk.S+tk.E+tk.W,
+                padx=1,
+                pady=1)
         self.context.graph_widgets.get("TransformationMenu").grid(column=1,
-                row=8,
+                row=6,
                 columnspan=NUM_OF_COLUMNS,
-                sticky=tk.E)
+                sticky=tk.W+tk.N,
+                padx=1,
+                pady=1)
+        self.context.graph_widgets.get("RangeMenu").grid(column=1,
+                row=6,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.N,
+                ipady=5)
     def change_array(self, array, legend, **kwargs):
         """Set the current plot and current legend then update the graph
         using the current transformation"""
