@@ -8,8 +8,10 @@ Plots CSV files, preforms analysis on the data, and displays it in multiple grap
 import os
 import csv
 import sys
+import re
 from typing import Callable
 from typing import List
+from typing import Dict
 from functools import partial
 
 import tkinter as tk
@@ -28,6 +30,8 @@ matplotlib.use("TkAgg")
 
 
 
+## Font for Titles
+# @var LARGE_FONT
 LARGE_FONT= ("Verdana", 12)
 
 @dataclass
@@ -63,15 +67,27 @@ class PlotterData:
     ## List of 2nd array's Line
     line:           list = field(default_factory=list)
 
+    ## Touple for x_range
+    x_range:        tuple = field(default=(0,0))
+    x_range_text:   tk.StringVar     = field(default_factory=tk.StringVar)
+
+    ## Touple for y_range
+    y_range:        str = field(default="")
+    y_range_text:        str = field(default="")
+
     ## List of check boxes in column menu
     check_box:      List[tk.IntVar]= field(default_factory=list)
 
-    select_columns_widgets:     list = field(default_factory=list)
+    select_columns_widgets: Dict[str, tk.Widget] = field(default_factory=dict)
 
     ## The current column being plotted
     current_plot:    np.ndarray = field(init=False)
     current_legend:  str = field(default="")
     current_transformation:  str = field(default="None")
+
+    ## GraphPage Widgets
+    graph_widgets: Dict[str, tk.Widget] = field(default_factory=dict)
+
 
     def var_states(self):
         """!
@@ -158,14 +174,16 @@ class CsvPlotter(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.wm_title(self, "CSV Plotter")
 
+        self.columnconfigure(0,weight=1)
+        self.rowconfigure(0,weight=1)
+        self.resizable(True, True)
+
         ## Frame that all other pages are added to
         container = tk.Frame(self)
+        container.columnconfigure(0, weight=1)
+        container.rowconfigure(0, weight=1)
+        container.grid(sticky=tk.NSEW)
 
-        container.pack(side="top",
-                       fill="both",
-                       expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
 
         context = PlotterData()
         context.filename = filename
@@ -181,7 +199,8 @@ class CsvPlotter(tk.Tk):
             context.frames[F] = frame
             frame.grid(row=0,
                        column=0,
-                       sticky="nsew")
+                       sticky=tk.NSEW)
+            frame.grid_remove()
 
         events.trigger_event("SelectFile")
         self.show_frame(SelectColumns)
@@ -192,8 +211,15 @@ class CsvPlotter(tk.Tk):
         @param    self    the object pointer
         @param    cont    pointer to frame to raise
         """
+        for F in self.context.frames.values():
+            F.grid_remove()
         frame = self.context.frames[cont]
+        frame.grid()
         frame.tkraise()
+        self.update()
+        self.geometry("")
+        self.eval('tk::PlaceWindow . center')
+
 
 class SelectColumns(tk.Frame):
     """!
@@ -204,6 +230,7 @@ class SelectColumns(tk.Frame):
 
         tk.Frame.__init__(self, parent)
 
+        self.columnconfigure(0, weight=1)
 
         ## Object pointer to parent frame
         # @var parent
@@ -222,10 +249,7 @@ class SelectColumns(tk.Frame):
         ## Page Title widget handle
         # @var title_label
         context.title_label = ttk.Label(self, text="Open File", font=LARGE_FONT)
-        context.title_label.pack(pady=10,padx=10)
-
-        ## List of widgets in frame
-        # @var widget_list
+        context.title_label.grid(column=0, sticky=tk.N)
 
         ## Prevents user from spamming button
         # @var spam
@@ -234,8 +258,8 @@ class SelectColumns(tk.Frame):
         button = ttk.Button(self,
                             text="Select CSV",
                             command=lambda:self.select_file(True))
-        button.pack()
-        context.select_columns_widgets.append(button)
+        button.grid(column=0, sticky=tk.NSEW)
+        context.select_columns_widgets["SelectCSV"] = button
         self.handler.register_event("SelectFile", self.select_file)
 
     def clear_frame(self):
@@ -243,17 +267,17 @@ class SelectColumns(tk.Frame):
         Clear widget list
         """
         if len(self.context.select_columns_widgets) > 0:
-            for button in self.context.select_columns_widgets:
+            for button in self.context.select_columns_widgets.values():
                 button.destroy()
 
     def select_file(self, new_file = False):
         """!
         Open file and get filename
         @par    Methods Called
-        @link   main_init                                   @endlink
+        @link   main_init                   @endlink
         @par    Global Variables Affected
-        @link   self.context.filename       filename        @endlink \n
-        @link   SelectColumns.widget_list   widget_list     @endlink
+        PlotterData.filename\n
+        SelectColumns.widget_list
         """
         if self.context.filename == "" or new_file is True:
             self.context.filename = ''
@@ -265,8 +289,8 @@ class SelectColumns(tk.Frame):
             button = ttk.Button(self,
                                 text="Select CSV",
                                 command=lambda:self.select_file(True))
-            button.pack()
-            self.context.select_columns_widgets.append(button)
+            self.context.select_columns_widgets["SelectCSV"] = button
+            print(self.context.filename)
             self.main_init()
 
     def graph(self):
@@ -278,20 +302,19 @@ class SelectColumns(tk.Frame):
         @link   main            @endlink
 
         @par Global Variables Affected
-        @link   widget_list     @endlink\n
-        @link   spam            @endlink
+        widget_list\n
+        spam
         """
         if self.context.confirm_check() is True:
             if self.spam is True:
-                self.context.select_columns_widgets.pop().destroy()
+                self.context.select_columns_widgets.get("Spam").destroy()
             self.spam = False
             self.main()
         elif self.spam is False:
             label = ttk.Label(self,
                              text="Select at least one Box",
                              font=('bold'))
-            label.pack()
-            self.context.select_columns_widgets.append(label)
+            self.context.select_columns_widgets["Spam"] = label
             self.spam = True
 
     def create_checkboxes(self):
@@ -300,26 +323,34 @@ class SelectColumns(tk.Frame):
         @param  self        The object pointer
         @par    Global Variables Affected
         @link   check_box   @endlink\n
-        @link   title_label @endlink\n
+        @link   PlotterData.title_label @endlink\n
         @link   widget_list @endlink
         """
         self.context.check_box = []
         self.context.title_label['text'] = os.path.basename(self.context.filename).split('.')[0]
+        checkbutton_frame = tk.Frame(self)
         for  _title in self.context.title_row:
             check = tk.IntVar()
-            button = ttk.Checkbutton(self,
+            button = ttk.Checkbutton(checkbutton_frame,
                            text=_title,
                            variable=check
                            )
-            button.pack()
-            self.context.select_columns_widgets.append(button)
+            button.grid(column=0,sticky=tk.NSEW)
             self.context.check_box.append(check)
 
+
+        self.context.select_columns_widgets["checkbutton_frame"] = checkbutton_frame
         button = ttk.Button(self,
                            text="Go To Graph Page",
                            command=self.graph)
-        button.pack()
-        self.context.select_columns_widgets.append(button)
+        self.context.select_columns_widgets["Graph"] = button
+
+        self.render_page()
+
+    def render_page(self):
+        for widget in self.context.select_columns_widgets.values():
+            widget.grid(column=0, sticky=tk.NSEW)
+
 
     def get_column_titles(self):
         """!
@@ -327,10 +358,10 @@ class SelectColumns(tk.Frame):
         @param  self     The object pointer
         @par Global Variables Affected
         @link   PlotterData.use_cols                            @endlink\n
-        @link   convert_boxes                                   @endlink\n
-        @link   CsvPlotter.use_cols_titles  use_cols_titles     @endlink\n
+        @link   PlotterData.convert_boxes                                   @endlink\n
+        @link   PlotterData.use_cols_titles  use_cols_titles     @endlink\n
         @link   PlotterData.checkboxes                          @endlink\n
-        @link   title_row                                       @endlink\n
+        @link   PlotterData.title_row                                       @endlink\n
         """
         self.context.use_cols = []
         self.context.use_cols_titles = []
@@ -410,21 +441,6 @@ class GraphPage(tk.Frame):
         self.handler = handler
 
         self.transformation = Transformations(context)
-        tk.Label(self,
-                 text="Graph Page",
-                 font=LARGE_FONT).pack()
-        self.label2 = tk.Label(self,
-                               text="",
-                               font=LARGE_FONT)
-        self.label2.pack()
-        button1 = ttk.Button(self,text="Select Columns",
-                             command=lambda:controller.show_frame(SelectColumns))
-        button1.pack(pady=10, padx=10)
-
-
-        ## List of widgets in frame
-        # @var widget_list
-        self.widget_list = []
 
         handler.register_event("Graph", self.main)
         handler.register_event("UpdateGraph", self.update_graph)
@@ -434,28 +450,39 @@ class GraphPage(tk.Frame):
         Called when Update Graph is clicked
         @param  self    The object pointer
         @par    Global Variables Affected
-        @link   widget_list                                 @endlink\n
-        @link   PlotterData.file_data        file_data      @endlink\n
+        @link   file_data        file_data      @endlink\n
         @link   PlotterData.use_cols_titles use_cols_titles @endlink\n
         @link   PlotterData.line             line           @endlink\n
         @link   fig                                         @endlink
 
         @par    Methods called
         @link   get_array                                   @endlink\n
-        @link   update_graph_menu                           @endlink
+        @link   create_graph_menu                           @endlink
         """
-        self.label2['text'] = os.path.basename(self.context.filename).split('.')[0]
-        for widget in self.widget_list:
+        for widget in self.context.graph_widgets.values():
             widget.destroy()
 
-        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
-                self.context.use_cols_titles,
-                self.get_array(self.context.file_data, -1),
-                self.context.use_cols_titles[-1])
+        self.context.graph_widgets["Title"] = tk.Label(self,
+                                                  text="Graph Page",
+                                                  font=LARGE_FONT)
+        self.context.graph_widgets["FileTitle"] = tk.Label(self,
+                                                      text="",
+                                                      font=LARGE_FONT)
+
+        self.context.graph_widgets["SelectColumns"] = ttk.Button(self, text="Select Columns",
+                             command=lambda:self.controller.show_frame(SelectColumns))
+        self.context.graph_widgets["FileTitle"]['text'] = os.path.basename(self.context.filename).split('.')[0]
 
         self.context.current_plot = self.get_array(self.context.file_data, -1)
-        self.update_graph_menu()
+        self.context.line, self.context.fig = self.plotcsv(self.context.file_data,
+                self.context.use_cols_titles,
+                self.context.current_plot,
+                self.context.use_cols_titles[-1])
+
+        self.create_graph_menu()
         self.create_transformation_menu()
+        self.create_range_menu()
+        self.render_page()
 
         self.controller.eval('tk::PlaceWindow . center')
 
@@ -470,7 +497,6 @@ class GraphPage(tk.Frame):
         @param  data_array  Array of data for 2nd graph
         @param  legends_2   Legend for the 2nd Array
         @par    Global variables affected
-        @link   widget_list @endlink\n
         @retval line_2      Handle for the 2nd graph's Line
         @retval figure      Handle for the 2nd graph's figure
         """
@@ -478,6 +504,7 @@ class GraphPage(tk.Frame):
         figure = plt.figure(figsize=(16,6))
         axes_1 = figure.add_subplot(211)
         axes_1.plot(plot_data)
+        #plt.subplots_adjust(left=.08)
         plt.grid()
         plt.autoscale(enable=True,axis='both',tight=True)
         plt.ylabel('Magnetic field [LSB]',backgroundcolor='white')
@@ -496,19 +523,10 @@ class GraphPage(tk.Frame):
 
         canvas = FigureCanvasTkAgg(figure, self)
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM,
-                                  fill=tk.BOTH,
-                                  expand=True)
-
-        toolbar = NavigationToolbar2Tk(canvas, self)
-        toolbar.update()
-        self.widget_list.append(toolbar)
-
-        graph_widget = canvas._tkcanvas
-        graph_widget.pack(side=tk.TOP,
-                              fill=tk.BOTH,
-                              expand=True)
-        self.widget_list.append(graph_widget)
+        self.context.graph_widgets["Canvas"] = canvas.get_tk_widget()
+        self.context.graph_widgets["Toolbar"] = NavigationToolbar2Tk(canvas, self, pack_toolbar=False)
+        self.context.graph_widgets["Toolbar"].update()
+        #self.context.graph_widgets["TKCanvas"] = canvas._tkcanvas
         return line_2, figure
 
     def get_array(self, data_array, _col):
@@ -524,7 +542,7 @@ class GraphPage(tk.Frame):
             return data_array[:,_col]
         return data_array
     # dynamically make menu of lines to switch bottem graph to
-    def update_graph_menu(self):
+    def create_graph_menu(self):
         """!
         Updates the Graph Menu
         @param  self    The object pointer
@@ -532,41 +550,205 @@ class GraphPage(tk.Frame):
         @link   PlotterData.use_cols_titles @endlink\n
         @link   PlotterData.line    line    @endlink\n
         @link   fig                         @endlink\n
-        @link   widget_list                 @endlink
         """
 
+        graph_menu = tk.Frame(self)
+        graph_menu.columnconfigure(0,weight=1)
         for _column, title in enumerate(self.context.use_cols_titles):
-            button = ttk.Button(self,
+            button = ttk.Button(graph_menu,
                     text=title,
                     command=partial(self.change_array,
                         self.get_array(self.context.file_data,_column),
                         title))
-            button.pack(side=tk.LEFT,pady=4)
-            self.widget_list.append(button)
+            button.grid(padx=4,
+                    sticky=tk.NSEW)
+        self.context.graph_widgets["GraphMenu"] = graph_menu
+
+    def validate_range(self,  axis, newval, op):
+        PATTERN = '^-?\d+,\d+$'
+        PARTIAL_PATTERN = '^-?$|^-?\d+,?(\d+)?$'
+
+        match = re.match(PATTERN, newval)
+        valid = bool(match)
+
+        if op=='key':
+            ok_so_far = re.match(PARTIAL_PATTERN, newval) is not None
+            if valid:
+                if axis == "x":
+                    self.context.x_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(x_range= self.context.x_range, normal_x_direction = True)
+                    self.update_top_graph(x_range= self.context.x_range, normal_x_direction = True)
+                elif axis == "y":
+                    self.context.y_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(y_range= self.context.y_range, normal_y_direction = True)
+                    self.update_top_graph(y_range= self.context.y_range, normal_y_direction = True)
+            elif not ok_so_far:
+                if axis == "x":
+                    self.update_graph(x_autoscale=True)
+                    self.update_top_graph(x_autoscale=True)
+                elif axis == "y":
+                    self.update_graph(y_autoscale=True)
+                    self.update_top_graph(y_autoscale=True)
+            return ok_so_far
+        elif op == 'focusout' or op == 'focusin':
+            if valid:
+                if axis == "x":
+                    self.context.x_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(x_range= self.context.x_range)
+                    self.update_top_graph(x_range= self.context.x_range)
+                if axis == "y":
+                    self.context.y_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(y_range= self.context.y_range)
+                    self.update_top_graph(y_range= self.context.y_range)
+            else:
+                if axis == "x":
+                    self.update_graph(x_autoscale=True)
+                    self.update_top_graph(x_autoscale=True)
+                elif axis == "y":
+                    self.update_graph(y_autoscale=True)
+                    self.update_top_graph(y_autoscale=True)
+        return valid
+
+    def create_range_menu(self):
+        """!
+        Creates the widges for the the range entry boxes
+        """
+        range_frame = ttk.Frame(self)
+
+        axis = "x"
+        validate_range_wrapper = (range_frame.register(self.validate_range), axis, '%P', '%V')
+
+        widget = ttk.Label(range_frame, text="X Range")
+        #self.context.x_range_text.set("low,high")
+        widget.grid(column=0, row=0)
+        widget = ttk.Entry(range_frame,
+                textvariable=self.context.x_range_text,
+                validate="all",
+                validatecommand=validate_range_wrapper)
+        widget.grid(column=0, row=1)
+
+        axis = "y"
+        validate_range_wrapper_y = (range_frame.register(self.validate_range), axis, '%P', '%V')
+        widget = ttk.Label(range_frame, text="Y Range")
+        widget.grid(column=1, row=0)
+        widget = ttk.Entry(range_frame,
+                textvariable=self.context.y_range,
+                validate="key",
+                validatecommand=validate_range_wrapper_y)
+        widget.grid(column=1, row=1)
+        self.context.graph_widgets["RangeMenu"] = range_frame
 
     def create_transformation_menu(self):
-        for trans in self.transformation.get_list_of_transformations():
-            button = ttk.Button(self,
+        """!
+        Creates the widges for the the transformation menu
+        """
+        transform_menu = tk.Frame(self)
+        for count, trans in enumerate(self.transformation.get_list_of_transformations()):
+            button = ttk.Button(transform_menu,
                     text=str(trans),
                     command=partial(self.change_transformation,
                         trans))
+            button.grid(row=0,column=count,padx=2)
+        self.context.graph_widgets["TransformationMenu"] = transform_menu
 
-            button.pack(side=tk.RIGHT,pady=4)
-            self.widget_list.append(button)
-
+    def render_page(self):
+        """!
+        Lays out all of the widgets on the graph page
+        """
+        NUM_OF_COLUMNS = 3
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=100)
+        self.columnconfigure(2, weight=0)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=5)
+        self.rowconfigure(2, weight=5)
+        self.rowconfigure(3, weight=100)
+        self.rowconfigure(4, weight=0)
+        self.rowconfigure(5, weight=0)
+        self.rowconfigure(6, weight=1)
+        self.rowconfigure(7, weight=0)
+        self.rowconfigure(8, weight=0)
+#        self.context.graph_widgets.get("Title").grid(column=0,
+#                row=0,
+#                columnspan=NUM_OF_COLUMNS,
+#                sticky=tk.N)
+        self.context.graph_widgets.get("FileTitle").grid(column=0,
+                row=1,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.NS)
+        self.context.graph_widgets.get("SelectColumns").grid(column=0,
+                row=2,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.N)
+        #self.rowconfigure(2, minsize=font.nametofont("TkDefaultFont").)
+        self.rowconfigure(2, minsize=25)
+        self.context.graph_widgets.get("Canvas").grid(column=1,
+                row=3,
+                rowspan=4,
+                sticky=tk.NSEW)
+        self.context.graph_widgets.get("GraphMenu").grid(column=0,
+                row=6,
+                sticky=tk.NSEW)
+        self.context.graph_widgets.get("Toolbar").grid(column=1,
+                row=7,
+                sticky=tk.W)
+        self.context.graph_widgets.get("RangeMenu").grid(column=1,
+                row=7,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.E,
+                ipady=5)
+        self.context.graph_widgets.get("TransformationMenu").grid(column=1,
+                row=8,
+                columnspan=NUM_OF_COLUMNS,
+                sticky=tk.E)
     def change_array(self, array, legend, **kwargs):
         """Set the current plot and current legend then update the graph
         using the current transformation"""
         self.context.current_plot = array
         self.context.current_legend = legend
-        self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
+
+        var1, var2 = self.transformation.call_transform(self.context.current_transformation,**kwargs)
+        self.update_graph(**var1)
+        if var2 is not None:
+            self.update_top_graph(**var2)
 
     def change_transformation(self, transformation, **kwargs):
         """Set the transformation then update the graph using the current
         plot and legend"""
         self.context.current_transformation = transformation
-        self.update_graph(**self.transformation.call_transform(transformation,**kwargs))
 
+        var1, var2 = self.transformation.call_transform(transformation,**kwargs)
+        self.update_graph(**var1)
+        if var2 is not None:
+            self.update_top_graph(**var2)
+
+
+    def update_top_graph(self, **kwargs):
+        axis = self.context.fig.get_axes()[0]
+
+        # Axis scaling
+        axis.relim()
+        if "x_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("x_autoscale"), axis='x', tight=True)
+        if "y_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("y_autoscale"),axis='y',tight=True)
+
+        # X and Y ranges
+        if "x_range" in kwargs:
+            axis.set_xlim(kwargs.pop("x_range"))
+        if "y_range" in kwargs:
+            axis.set_ylim(kwargs.pop("y_range"))
+
+        if "normal_x_direction" in kwargs:
+            if axis.xaxis_inverted():
+                axis.invert_xaxis()
+        if "normal_y_direction" in kwargs:
+            if axis.yaxis_inverted():
+                axis.invert_yaxis()
+
+        # Force update
+        self.context.fig.canvas.draw()
+        self.context.fig.canvas.flush_events()
 
     def update_graph(self, **kwargs):
         """!Update bottem graph with new array
@@ -581,22 +763,16 @@ class GraphPage(tk.Frame):
         @param  y_range             [optional]  Touple of lower and upper bounds
         for y range (Currently not implemented)
         """
-
-        #x_data, y_data, xlab, ylab = fourier(y_data)
-
         # Update X and Y data
         if "x_data" in kwargs:
-            print(f"x_data: {kwargs.get('x_data')}")
             self.context.line[0].set_xdata(kwargs.pop("x_data"))
         if "y_data"  in kwargs:
-            print(f"y_data: {kwargs.get('y_data')}")
             self.context.line[0].set_ydata(kwargs.pop("y_data"))
 
         axis = self.context.fig.get_axes()[1]
 
         # Update legend
         if "legend" in kwargs:
-            print(f"legend: {kwargs.get('legend')}")
             axis.legend((self.context.line[0],),
                            (kwargs.pop("legend"),),
                            loc=1,
@@ -604,24 +780,29 @@ class GraphPage(tk.Frame):
 
         # X and Y labels
         if "x_lab" in kwargs:
-            print(f"x_lab: {kwargs.get('x_lab')}")
             axis.set_xlabel(kwargs.pop("x_lab"))
         if "y_lab" in kwargs:
-            print(f"y_lab: {kwargs.get('y_lab')}")
             axis.set_ylabel(kwargs.pop("y_lab"))
 
         # Axis scalling
         axis.relim()
-        #axis.margins()
-        axis.autoscale(enable=True,axis='both',tight=True)
+        if "x_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("x_autoscale"), axis='x', tight=True)
+        if "y_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("y_autoscale"),axis='y',tight=True)
+
+        # X and Y ranges
         if "x_range" in kwargs:
-            print(f"x_range: {kwargs.get('x_range')}")
-            axis.set_autoscalex_on()
-            axis.set_xscale = kwargs.pop("x_range")
+            axis.set_xlim(kwargs.pop("x_range"))
         if "y_range" in kwargs:
-            print(f"y_range: {kwargs.get('y_range')}")
-            axis.set_autoscaley_on(False)
-            axis.set_yscale = kwargs.pop("y_range")
+            axis.set_ylim(kwargs.pop("y_range"))
+
+        if "normal_x_direction" in kwargs:
+            if axis.xaxis_inverted():
+                axis.invert_xaxis()
+        if "normal_y_direction" in kwargs:
+            if axis.yaxis_inverted():
+                axis.invert_yaxis()
 
         # Force update
         self.context.fig.canvas.draw()
@@ -632,6 +813,9 @@ class Transformations:
     Class that handles transforms for GraphPage
     """
     def __init__(self, context):
+        """!
+        @param context          A handle to the event handler
+        """
         ## instence of @link DataClass @end
         self.context = context
         ## Dictionary for Transformation Title : transformation handle
@@ -670,6 +854,7 @@ class Transformations:
     def fourier(self, **kwargs):
         """!Performs a fourier transformation on the 1D array"""
         _return = kwargs
+        _return2 = None
         _return["y_data"] = np.fft.fft(self.context.current_plot)
         number_of_elements = len(self.context.current_plot)
         timestep = float(0.01)
@@ -677,22 +862,34 @@ class Transformations:
         _return["y_lab"] = "Fourier"
         _return["x_lab"] = "Frequency"
         _return["legend"] = self.context.current_legend + " Fourier"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
     def none(self, **kwargs):
         """!Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
         _return = kwargs
+        _return2 = None
         _return["y_data"] = self.context.current_plot
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         _return["legend"] = self.context.current_legend
         _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Magnetic field [LSB]"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
     def frequency(self, **kwargs):
         """!Calculates the zero crossings and sets a boolean"""
         samples = 10
         _return = kwargs
+        _return2 = None
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         frequency = np.empty_like(self.context.current_plot)
         history = np.full(samples, -0, np.int16)
@@ -713,7 +910,12 @@ class Transformations:
         _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Zero Crossings"
         _return["legend"] = self.context.current_legend + " Zero Crossings"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
 # Named tuple to store name and function reference in
 
@@ -721,7 +923,6 @@ class Transformations:
 ARG_FILENAME = ""
 if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
     ARG_FILENAME = os.path.join(os.path.abspath('./'), sys.argv[1])
-    print(f"Filename: {ARG_FILENAME}")
 
 app = CsvPlotter(filename=ARG_FILENAME)
 
