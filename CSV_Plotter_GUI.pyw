@@ -714,7 +714,7 @@ class GraphPage(tk.Frame):
     def update_top_graph(self, **kwargs):
         axis = self.context.fig.get_axes()[0]
 
-        # Axis scalling
+        # Axis scaling
         axis.relim()
         if "x_autoscale" in kwargs:
             axis.autoscale(enable=kwargs.pop("x_autoscale"), axis='x', tight=True)
@@ -742,8 +742,6 @@ class GraphPage(tk.Frame):
         self.context.fig.canvas.draw()
         self.context.fig.canvas.flush_events()
 
-
-
     def update_graph(self, **kwargs):
         """!Update bottem graph with new array
         @param  self                The object pointer
@@ -757,9 +755,6 @@ class GraphPage(tk.Frame):
         @param  y_range             [optional]  Touple of lower and upper bounds
         for y range (Currently not implemented)
         """
-
-        #x_data, y_data, xlab, ylab = fourier(y_data)
-
         # Update X and Y data
         if "x_data" in kwargs:
             print(f"x_data: {kwargs.get('x_data')}")
@@ -788,8 +783,12 @@ class GraphPage(tk.Frame):
 
         # Axis scalling
         axis.relim()
-        #axis.margins()
-        axis.autoscale(enable=True,axis='both',tight=True)
+        if "x_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("x_autoscale"), axis='x', tight=True)
+        if "y_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("y_autoscale"),axis='y',tight=True)
+
+        # X and Y ranges
         if "x_range" in kwargs:
             print(f"x_range: {kwargs.get('x_range')}")
             axis.set_xlim(kwargs.pop("x_range"))
