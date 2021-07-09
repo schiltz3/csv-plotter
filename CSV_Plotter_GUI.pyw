@@ -856,6 +856,7 @@ class Transformations:
     def fourier(self, **kwargs):
         """!Performs a fourier transformation on the 1D array"""
         _return = kwargs
+        _return2 = None
         _return["y_data"] = np.fft.fft(self.context.current_plot)
         number_of_elements = len(self.context.current_plot)
         timestep = float(0.01)
@@ -863,22 +864,34 @@ class Transformations:
         _return["y_lab"] = "Fourier"
         _return["x_lab"] = "Frequency"
         _return["legend"] = self.context.current_legend + " Fourier"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
     def none(self, **kwargs):
         """!Does not apply a transformation Instead, just gets current_plot and passes kwargs though"""
         _return = kwargs
+        _return2 = None
         _return["y_data"] = self.context.current_plot
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         _return["legend"] = self.context.current_legend
         _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Magnetic field [LSB]"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
     def frequency(self, **kwargs):
         """!Calculates the zero crossings and sets a boolean"""
         samples = 10
         _return = kwargs
+        _return2 = None
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
         frequency = np.empty_like(self.context.current_plot)
         history = np.full(samples, -0, np.int16)
@@ -900,7 +913,12 @@ class Transformations:
         _return["x_lab"] = ".01 Second"
         _return["y_lab"] = "Zero Crossings"
         _return["legend"] = self.context.current_legend + " Zero Crossings"
-        return _return
+        _return["x_autoscale"] = True
+        _return["y_autoscale"] = True
+        _return2 = {}
+        _return2["x_autoscale"] = True
+        _return2["y_autoscale"] = True
+        return (_return, _return2)
 
 # Named tuple to store name and function reference in
 
