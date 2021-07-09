@@ -313,9 +313,12 @@ class SelectColumns(tk.Frame):
         elif self.spam is False:
             label = ttk.Label(self,
                              text="Select at least one Box",
-                             font=('bold'))
+                             font=('bold'),
+                             anchor='center',
+                             background="red")
             self.context.select_columns_widgets["Spam"] = label
             self.spam = True
+            self.render_page()
 
     def create_checkboxes(self):
         """!
@@ -329,17 +332,18 @@ class SelectColumns(tk.Frame):
         self.context.check_box = []
         self.context.title_label['text'] = os.path.basename(self.context.filename).split('.')[0]
         checkbutton_frame = tk.Frame(self)
+        checkbutton_frame.columnconfigure(0, weight=1)
         for  _title in self.context.title_row:
             check = tk.IntVar()
             button = ttk.Checkbutton(checkbutton_frame,
                            text=_title,
                            variable=check
                            )
-            button.grid(column=0,sticky=tk.NSEW)
+            button.grid(column=0)
             self.context.check_box.append(check)
 
 
-        self.context.select_columns_widgets["checkbutton_frame"] = checkbutton_frame
+        self.context.select_columns_widgets["CheckButtonFrame"] = checkbutton_frame
         button = ttk.Button(self,
                            text="Go To Graph Page",
                            command=self.graph)
@@ -348,8 +352,33 @@ class SelectColumns(tk.Frame):
         self.render_page()
 
     def render_page(self):
-        for widget in self.context.select_columns_widgets.values():
-            widget.grid(column=0, sticky=tk.NSEW, padx=1, pady=1)
+
+        self.columnconfigure(0,weight=10)
+        self.columnconfigure(1,weight=1)
+        self.columnconfigure(2,weight=10)
+        self.rowconfigure(0,weight=10)
+        self.rowconfigure(1,weight=1)
+        self.rowconfigure(2, weight=0)
+        self.rowconfigure(3, weight=1)
+        self.rowconfigure(4, weight=1)
+        self.rowconfigure(5, weight=1)
+        self.rowconfigure(6, weight=10)
+
+        self.context.title_label.grid(column=1,
+                row=0,
+                sticky=tk.S)
+        self.context.select_columns_widgets.get("SelectCSV").grid(column=1,
+                row=1,
+                sticky=tk.NSEW)
+        self.context.select_columns_widgets.get("CheckButtonFrame").grid(column=1,
+                row=2,)
+        self.context.select_columns_widgets.get("Graph").grid(column=1,
+                row=3,
+                sticky=tk.NSEW)
+        if self.spam is True:
+            self.context.select_columns_widgets.get("Spam").grid(column=1,
+                    row=4,
+                    sticky=tk.NSEW)
 
 
     def get_column_titles(self):
