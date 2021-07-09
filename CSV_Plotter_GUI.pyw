@@ -704,7 +704,44 @@ class GraphPage(tk.Frame):
         """Set the transformation then update the graph using the current
         plot and legend"""
         self.context.current_transformation = transformation
-        self.update_graph(**self.transformation.call_transform(transformation,**kwargs))
+        var1, var2 = self.transformation.call_transform(transformation,**kwargs)
+        self.update_graph(**var1)
+        if var2 is not None:
+            self.update_top_graph(**var2)
+        #self.update_top_graph(**self.transformation.call_transform(transformation,**kwargs))
+
+
+    def update_top_graph(self, **kwargs):
+        axis = self.context.fig.get_axes()[0]
+
+        # Axis scalling
+        axis.relim()
+        if "x_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("x_autoscale"), axis='x', tight=True)
+        if "y_autoscale" in kwargs:
+            axis.autoscale(enable=kwargs.pop("y_autoscale"),axis='y',tight=True)
+
+        # X and Y ranges
+        if "x_range" in kwargs:
+            print(f"x_range: {kwargs.get('x_range')}")
+            axis.set_xlim(kwargs.pop("x_range"))
+        if "y_range" in kwargs:
+            print(f"y_range: {kwargs.get('y_range')}")
+            axis.set_ylim(kwargs.pop("y_range"))
+
+        if "normal_x_direction" in kwargs:
+            print("Normal X Direction")
+            if axis.xaxis_inverted():
+                axis.invert_xaxis()
+        if "normal_y_direction" in kwargs:
+            print("Normal Y Direction")
+            if axis.yaxis_inverted():
+                axis.invert_yaxis()
+
+        # Force update
+        self.context.fig.canvas.draw()
+        self.context.fig.canvas.flush_events()
+
 
 
     def update_graph(self, **kwargs):
