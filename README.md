@@ -1,15 +1,15 @@
 # csv-plotter
-CSV plotting tool that allows for custom data analysis
+CSV plotting tool that allows for custom data analysis and plotting of the analysis results
 
 ## CSV Format:
-The CSV must be in the following format to use with this reader
+The CSV must be in the following (standard) format to use with this reader
 
 |Column Name|Column Name|...|
 |---|---|---|
 |data|data|...|
 |...|...|...|...|
 
-## Instalation
+## Installation
 ### Install python libraries:
 #### On Linux or Windows:
 ```bash
@@ -24,5 +24,9 @@ sudo apt-get install python3-tk
 ### Select Columns to graph
 ![image](https://user-images.githubusercontent.com/45466247/123446127-2eb38c80-d59e-11eb-9c76-699f34ca14e6.png)
 ### Graph Interface
-![image](https://user-images.githubusercontent.com/45466247/123446168-396e2180-d59e-11eb-84b0-9f38336b1fd5.png)
+![image](https://user-images.githubusercontent.com/45466247/125132687-4c1e4580-e0ca-11eb-92c8-573e6651bf82.png)
 
+
+# This project is still under active development.
+If you have any questions, or encounter any issues with installing or running the program, feel free to open a [new issue](https://github.com/schiltz3/csv-plotter/issues/new)
+or check to see if your issue has already been answered [here](https://github.com/schiltz3/csv-plotter/issues)
