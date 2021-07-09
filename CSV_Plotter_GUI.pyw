@@ -577,28 +577,46 @@ class GraphPage(tk.Frame):
     def validate_range(self,  axis, newval, op):
         PATTERN = '^-?\d+,\d+$'
         PARTIAL_PATTERN = '^-?$|^-?\d+,?(\d+)?$'
-        print(f"op: {op}")
-        print(f"NewVal: {newval}")
 
         match = re.match(PATTERN, newval)
         valid = bool(match)
-        print(f"Match: {match}")
-        print(f"Valid: {valid}")
-        print(f"Axis: {axis}")
 
         if op=='key':
             ok_so_far = re.match(PARTIAL_PATTERN, newval) is not None
             if valid:
-                self.context.x_range = tuple(map(int,newval.split(",")))
-                self.update_graph(x_range= self.context.x_range, normal_x_direction = True)
+                if axis == "x":
+                    self.context.x_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(x_range= self.context.x_range, normal_x_direction = True)
+                    self.update_top_graph(x_range= self.context.x_range, normal_x_direction = True)
+                elif axis == "y":
+                    self.context.y_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(y_range= self.context.y_range, normal_y_direction = True)
+                    self.update_top_graph(y_range= self.context.y_range, normal_y_direction = True)
+            elif not ok_so_far:
+                if axis == "x":
+                    self.update_graph(x_autoscale=True)
+                    self.update_top_graph(x_autoscale=True)
+                elif axis == "y":
+                    self.update_graph(y_autoscale=True)
+                    self.update_top_graph(y_autoscale=True)
             return ok_so_far
-        elif op=='focusout':
+        elif op == 'focusout' or op == 'focusin':
             if valid:
-                self.context.x_range = tuple(map(int,self.context.x_range_text.get().split(",")))
-                self.update_graph(x_range= self.context.x_range)
-                print(f"x_range: {self.context.x_range}")
+                if axis == "x":
+                    self.context.x_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(x_range= self.context.x_range)
+                    self.update_top_graph(x_range= self.context.x_range)
+                if axis == "y":
+                    self.context.y_range = tuple(map(int,newval.split(",")))
+                    self.update_graph(y_range= self.context.y_range)
+                    self.update_top_graph(y_range= self.context.y_range)
             else:
-                self.update_graph()
+                if axis == "x":
+                    self.update_graph(x_autoscale=True)
+                    self.update_top_graph(x_autoscale=True)
+                elif axis == "y":
+                    self.update_graph(y_autoscale=True)
+                    self.update_top_graph(y_autoscale=True)
         return valid
 
     def create_range_menu(self):
@@ -610,8 +628,8 @@ class GraphPage(tk.Frame):
         axis = "x"
         validate_range_wrapper = (range_frame.register(self.validate_range), axis, '%P', '%V')
 
-        widget = ttk.Label(range_frame, text="X Range <low,high>")
-        self.context.x_range_text.set("low,high")
+        widget = ttk.Label(range_frame, text="X Range")
+        #self.context.x_range_text.set("low,high")
         widget.grid(column=0, row=0)
         widget = ttk.Entry(range_frame,
                 textvariable=self.context.x_range_text,
@@ -621,7 +639,7 @@ class GraphPage(tk.Frame):
 
         axis = "y"
         validate_range_wrapper_y = (range_frame.register(self.validate_range), axis, '%P', '%V')
-        widget = ttk.Label(range_frame, text="Y Range <low,high>")
+        widget = ttk.Label(range_frame, text="Y Range")
         widget.grid(column=1, row=0)
         widget = ttk.Entry(range_frame,
                 textvariable=self.context.y_range,
