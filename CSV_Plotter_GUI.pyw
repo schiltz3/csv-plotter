@@ -707,17 +707,21 @@ class GraphPage(tk.Frame):
         using the current transformation"""
         self.context.current_plot = array
         self.context.current_legend = legend
-        self.update_graph(**self.transformation.call_transform(self.context.current_transformation,**kwargs))
+
+        var1, var2 = self.transformation.call_transform(self.context.current_transformation,**kwargs)
+        self.update_graph(**var1)
+        if var2 is not None:
+            self.update_top_graph(**var2)
 
     def change_transformation(self, transformation, **kwargs):
         """Set the transformation then update the graph using the current
         plot and legend"""
         self.context.current_transformation = transformation
+
         var1, var2 = self.transformation.call_transform(transformation,**kwargs)
         self.update_graph(**var1)
         if var2 is not None:
             self.update_top_graph(**var2)
-        #self.update_top_graph(**self.transformation.call_transform(transformation,**kwargs))
 
 
     def update_top_graph(self, **kwargs):
