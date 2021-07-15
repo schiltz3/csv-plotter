@@ -912,7 +912,7 @@ class Transformations:
 
     def frequency(self, **kwargs):
         """!Calculates the zero crossings and sets a boolean"""
-        samples = 10
+        samples = 20
         _return = kwargs
         _return2 = None
         _return["x_data"] = np.array([*range(0,self.context.current_plot.size)])
