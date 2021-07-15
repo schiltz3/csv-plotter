@@ -658,7 +658,7 @@ class GraphPage(tk.Frame):
         widget.grid(column=1, row=0)
         widget = ttk.Entry(range_frame,
                 textvariable=self.context.y_range,
-                validate="key",
+                validate="all",
                 validatecommand=validate_range_wrapper_y)
         widget.grid(column=1, row=1)
         self.context.graph_widgets["RangeMenu"] = range_frame
