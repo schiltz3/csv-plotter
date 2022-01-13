@@ -12,6 +12,7 @@ The CSV must be in the following (standard) format to use with this reader
 ## Installation
 ### Install python libraries:
 #### On Linux or Windows:
+Run this command in the same directory as the requirements.txt file
 ```bash
 python3 -m pip install -r requirements.txt
 ```
